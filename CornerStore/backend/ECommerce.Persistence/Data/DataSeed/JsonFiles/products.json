@@ -1,0 +1,479 @@
+[
+  {
+    "Name": "iPhone 14 Pro",
+    "Description": "Powerful Apple phone.",
+    "Price": 55000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 1,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "iPhone 13",
+    "Description": "Reliable iPhone.",
+    "Price": 42000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 1,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Samsung S23 Ultra",
+    "Description": "Flagship Samsung.",
+    "Price": 48000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 2,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Samsung A54",
+    "Description": "Mid-range Samsung.",
+    "Price": 15000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 2,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Xiaomi 13 Pro",
+    "Description": "Fast Xiaomi phone.",
+    "Price": 30000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 11,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Oppo Reno 10",
+    "Description": "Stylish Oppo.",
+    "Price": 18000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 12,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Realme GT Neo",
+    "Description": "Gaming Realme.",
+    "Price": 16000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 13,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Huawei P50",
+    "Description": "Premium Huawei.",
+    "Price": 25000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 10,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "OnePlus 11",
+    "Description": "Smooth OnePlus.",
+    "Price": 32000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 14,
+    "ProductTypeId": 1
+  },
+  {
+    "Name": "Google Pixel 7",
+    "Description": "Clean Android.",
+    "Price": 28000,
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 15,
+    "ProductTypeId": 1
+  },
+
+  {
+    "Name": "PlayStation 5",
+    "Description": "Next-gen console.",
+    "Price": 30000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 3,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Xbox Series X",
+    "Description": "Powerful Xbox.",
+    "Price": 28000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 16,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Xbox Series S",
+    "Description": "Budget Xbox.",
+    "Price": 18000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 16,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "PS5 Controller",
+    "Description": "Wireless controller.",
+    "Price": 3500,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 3,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Gaming Chair",
+    "Description": "Comfortable chair.",
+    "Price": 7000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 25,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Racing Wheel",
+    "Description": "Driving wheel.",
+    "Price": 9000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 18,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Gaming Mouse",
+    "Description": "Precision mouse.",
+    "Price": 1500,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 18,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Gaming Keyboard RGB",
+    "Description": "RGB keyboard.",
+    "Price": 2500,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 26,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "VR Headset",
+    "Description": "Virtual reality.",
+    "Price": 12000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 3,
+    "ProductTypeId": 2
+  },
+  {
+    "Name": "Nintendo Switch",
+    "Description": "Portable console.",
+    "Price": 20000,
+    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 17,
+    "ProductTypeId": 2
+  },
+
+  {
+    "Name": "MacBook Air M2",
+    "Description": "Light laptop.",
+    "Price": 60000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 1,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "Dell XPS 13",
+    "Description": "Premium Dell.",
+    "Price": 50000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 5,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "HP Pavilion",
+    "Description": "Daily laptop.",
+    "Price": 25000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 6,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "Lenovo Legion 5",
+    "Description": "Gaming Lenovo.",
+    "Price": 45000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 7,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "ASUS ROG",
+    "Description": "Gaming ASUS.",
+    "Price": 65000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 4,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "Acer Nitro 5",
+    "Description": "Budget gaming.",
+    "Price": 40000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 8,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "MSI Katana",
+    "Description": "Powerful MSI.",
+    "Price": 47000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 9,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "Huawei MateBook",
+    "Description": "Slim Huawei.",
+    "Price": 30000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 10,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "Dell Inspiron",
+    "Description": "Work laptop.",
+    "Price": 28000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 5,
+    "ProductTypeId": 3
+  },
+  {
+    "Name": "HP Omen",
+    "Description": "Gaming HP.",
+    "Price": 55000,
+    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 6,
+    "ProductTypeId": 3
+  },
+
+  {
+    "Name": "AirPods Pro",
+    "Description": "Wireless earbuds.",
+    "Price": 9000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 1,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Sony XM5",
+    "Description": "Premium Sony.",
+    "Price": 12000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 3,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "JBL Tune",
+    "Description": "Affordable JBL.",
+    "Price": 2500,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 21,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Samsung Buds",
+    "Description": "Compact buds.",
+    "Price": 5000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 2,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Anker Soundcore",
+    "Description": "Budget audio.",
+    "Price": 2000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 24,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Beats Studio",
+    "Description": "Deep bass.",
+    "Price": 11000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 23,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "HyperX Headset",
+    "Description": "Gaming audio.",
+    "Price": 3000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 20,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Logitech G Pro",
+    "Description": "Pro headset.",
+    "Price": 4000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 18,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Razer Kraken",
+    "Description": "Comfort headset.",
+    "Price": 3500,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 19,
+    "ProductTypeId": 4
+  },
+  {
+    "Name": "Bose QC45",
+    "Description": "Noise canceling.",
+    "Price": 13000,
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 22,
+    "ProductTypeId": 4
+  },
+
+  {
+    "Name": "USB-C Cable",
+    "Description": "Charging cable.",
+    "Price": 200,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 24,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Fast Charger",
+    "Description": "Quick charger.",
+    "Price": 500,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 24,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Power Bank",
+    "Description": "Portable battery.",
+    "Price": 1200,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 24,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Laptop Stand",
+    "Description": "Ergonomic stand.",
+    "Price": 800,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 26,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Wireless Mouse",
+    "Description": "Smooth mouse.",
+    "Price": 600,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 18,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Keyboard Cover",
+    "Description": "Keyboard protector.",
+    "Price": 150,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 1,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "HDMI Cable",
+    "Description": "Video cable.",
+    "Price": 250,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 24,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Phone Holder",
+    "Description": "Phone stand.",
+    "Price": 300,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 18,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "Cooling Pad",
+    "Description": "Laptop cooling.",
+    "Price": 700,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 26,
+    "ProductTypeId": 5
+  },
+  {
+    "Name": "USB Hub",
+    "Description": "Expand ports.",
+    "Price": 400,
+    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 24,
+    "ProductTypeId": 5
+  },
+
+  {
+    "Name": "Apple Watch 8",
+    "Description": "Smart watch.",
+    "Price": 12000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 1,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Samsung Watch 5",
+    "Description": "Stylish watch.",
+    "Price": 9000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 2,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Huawei GT3",
+    "Description": "Long battery.",
+    "Price": 7000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 10,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Xiaomi Watch",
+    "Description": "Affordable watch.",
+    "Price": 4000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 11,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Amazfit GTR",
+    "Description": "Elegant watch.",
+    "Price": 6000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 11,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Fitbit Versa",
+    "Description": "Fitness watch.",
+    "Price": 8000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 15,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Garmin Venu",
+    "Description": "Tracking watch.",
+    "Price": 10000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 11,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Realme Watch",
+    "Description": "Budget watch.",
+    "Price": 3000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 13,
+    "ProductTypeId": 6
+  },
+  {
+    "Name": "Oppo Watch",
+    "Description": "Modern watch.",
+    "Price": 5000,
+    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "ProductBrandId": 12,
+    "ProductTypeId": 6
+  }
+]

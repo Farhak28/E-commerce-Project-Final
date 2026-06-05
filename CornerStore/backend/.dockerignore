@@ -1,0 +1,12 @@
+bin
+obj
+*.user
+*.vs
+.vscode
+node_modules
+.next
+out
+dist
+*.log
+Dockerfile
+docker-compose.yml

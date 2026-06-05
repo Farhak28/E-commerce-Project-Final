@@ -1,0 +1,1 @@
+﻿{"title":"Validation Errors","status":400,"detail":"One or more validation errors occurred","Errors":{"$":["'i' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 0 | BytePositionInLine: 1."],"basket":["The basket field is required."]}}

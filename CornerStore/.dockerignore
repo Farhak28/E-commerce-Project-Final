@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log*
+yarn-error.log*
+.pnp*
+.next
+out
+dist
+.DS_Store
+.vscode
+*.log
+ECommerce.Online.API-master/bin
+ECommerce.Online.API-master/obj
+ECommerce.Online.API-master/**/*.user
+ECommerce.Online.API-master/**/*.vs

@@ -1,0 +1,88 @@
+services:
+  database:
+    platform: linux/amd64
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: cornerstore-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrong@Passw0rd"
+    ports:
+      - "1433:1433"
+    volumes:
+      - cornerstore-sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/1433' "]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: cornerstore-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: CornerStore.Api/Dockerfile
+    container_name: cornerstore-api
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-5141}:5141"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ConnectionStrings__DefaultConnection: "Server=database,1433;Database=ECommerceDBOnline;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__IdentityConnection: "Server=database,1433;Database=ECommerceDBOnline.Security;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__RedisConnection: "redis:6379"
+      JWTOptions__Issuer: "CornerStore"
+      JWTOptions__Audience: "CornerStoreUsers"
+      JWTOptions__SecretKey: "${JWT_OPTIONS__SECRET_KEY:-CHANGE_ME_USE_A_LONG_RANDOM_SECRET}"
+      Stripe__SKey: "${STRIPE_SECRET_KEY:-Stripe__SKey}"
+      Stripe__PublishableKey: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-Stripe__PKey}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      AI__ModelName: "${AI__ModelName:-gemini-2.5-flash}"
+      AI__EnableStartupIndexing: "${AI__EnableStartupIndexing:-false}"
+      DataSeed__ReloadFromJsonOnStartup: "false"
+      URLs__BaseUrl: "http://localhost:5141/"
+    volumes:
+      - cornerstore-product-images:/app/wwwroot/images/products
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://localhost:${API_PORT:-5141}/api"
+        NEXT_PUBLIC_API_ORIGIN: "http://localhost:${API_PORT:-5141}"
+        NEXT_PUBLIC_UNOPTIMIZED_IMAGES: "true"
+        API_INTERNAL_URL: "http://backend:5141/api"
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
+    container_name: cornerstore-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-3848}:3848"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "http://localhost:${API_PORT:-5141}/api"
+      NEXT_PUBLIC_API_ORIGIN: "http://localhost:${API_PORT:-5141}"
+      API_INTERNAL_URL: "http://backend:5141/api"
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
+
+volumes:
+  cornerstore-sql-data:
+  cornerstore-product-images:
