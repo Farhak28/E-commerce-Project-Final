@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, Skeleton } from "@/components/ui";
+import { BrandOfficialLink } from "@/components/brand-official-link";
 import { ProductComparisonTable } from "@/components/product-comparison-table";
 import { getProducts } from "@/lib/services/products";
 import type { Product } from "@/lib/types";
@@ -96,6 +97,33 @@ function CompareContent() {
               </Card>
             ))}
           </div>
+
+          <Card>
+            <h2 className="section-title text-lg font-semibold" suppressHydrationWarning>
+              {ready ? "Official brand pages" : "Official brand pages"}
+            </h2>
+            <p className="mt-1 text-sm text-text-muted">
+              Learn more from each manufacturer&apos;s website.
+            </p>
+            <ul className="mt-4 space-y-3">
+              {products.map((product) => (
+                <li
+                  key={product.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3"
+                >
+                  <div>
+                    <p className="font-semibold">{product.name}</p>
+                    <p className="text-xs text-text-muted">{product.productBrand}</p>
+                  </div>
+                  <BrandOfficialLink
+                    brandName={product.productBrand}
+                    officialUrl={product.brandOfficialUrl}
+                    variant="card"
+                  />
+                </li>
+              ))}
+            </ul>
+          </Card>
         </div>
       )}
     </div>

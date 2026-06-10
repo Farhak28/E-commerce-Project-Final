@@ -3,6 +3,7 @@ using ECommerce.Services.Abstraction;
 using ECommerce.Services.Abstraction.AI;
 using ECommerce.Shared;
 using ECommerce.Shared.DTOs.AIDTOs;
+using ECommerce.Shared.DTOs.BasketDTOs;
 using ECommerce.Shared.DTOs.ProductDTOs;
 using Microsoft.Extensions.Logging;
 
@@ -15,6 +16,8 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
     private readonly IOrderService _orders;
     private readonly IRagService _rag;
     private readonly IReviewSummaryService _reviewSummary;
+    private readonly IBasketService _baskets;
+    private readonly IWishlistService _wishlist;
     private readonly ILogger<AssistantToolExecutor> _logger;
 
     public AssistantToolExecutor(
@@ -23,6 +26,8 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
         IOrderService orders,
         IRagService rag,
         IReviewSummaryService reviewSummary,
+        IBasketService baskets,
+        IWishlistService wishlist,
         ILogger<AssistantToolExecutor> logger
     )
     {
@@ -31,6 +36,8 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
         _orders = orders;
         _rag = rag;
         _reviewSummary = reviewSummary;
+        _baskets = baskets;
+        _wishlist = wishlist;
         _logger = logger;
     }
 
@@ -60,6 +67,8 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
                 "getStorePolicies" => await StorePolicies(root, ct),
                 "getProductCategories" => await ProductCategories(ct),
                 "getReviewSummary" => await ReviewSummary(root, ct),
+                "addToCart" => await AddToCart(root, context, ct),
+                "addToWishlist" => await AddToWishlist(root, userEmail, ct),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" }),
             };
         }
@@ -270,6 +279,78 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
     private static string SerializeProducts(IReadOnlyList<ProductDTO> products) =>
         JsonSerializer.Serialize(new { products });
 
+    private async Task<string> AddToCart(JsonElement root, AssistantContextDTO ctx, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(ctx.BasketId))
+            return JsonSerializer.Serialize(new { error = "Basket not available. Refresh the page and try again." });
+
+        if (!root.TryGetProperty("productId", out var pidEl) || !pidEl.TryGetInt32(out var productId))
+            return JsonSerializer.Serialize(new { error = "productId is required." });
+
+        var qty = 1;
+        if (root.TryGetProperty("quantity", out var qEl) && qEl.TryGetInt32(out var q) && q > 0)
+            qty = Math.Min(q, 100);
+
+        var productResult = await _products.GetProductByIdAsync(productId);
+        if (!productResult.IsSuccess || productResult.Value is null)
+            return JsonSerializer.Serialize(new { error = $"Product {productId} was not found." });
+
+        var product = productResult.Value;
+        if (product.StockQuantity < qty)
+            return JsonSerializer.Serialize(new { error = "Not enough stock for that quantity.", productId });
+
+        var basket = await _baskets.GetBasketAsync(ctx.BasketId);
+        var items = basket.Items?.ToList() ?? [];
+        var existing = items.FirstOrDefault(i => i.Id == productId);
+        if (existing is not null)
+            items.Remove(existing);
+        items.Add(
+            new BasketItemDTO(
+                productId,
+                product.Name,
+                product.PictureUrl,
+                product.Price,
+                (existing?.Quantity ?? 0) + qty
+            )
+        );
+
+        basket.Id = ctx.BasketId;
+        basket.Items = items;
+        await _baskets.CreateOrUpdateBasketAsync(basket);
+
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            message = $"Added {product.Name} to your cart.",
+            productId,
+            products = new[] { product },
+        });
+    }
+
+    private async Task<string> AddToWishlist(JsonElement root, string? userEmail, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(userEmail))
+            return JsonSerializer.Serialize(new { error = "Sign in to save items to your wishlist." });
+
+        if (!root.TryGetProperty("productId", out var pidEl) || !pidEl.TryGetInt32(out var productId))
+            return JsonSerializer.Serialize(new { error = "productId is required." });
+
+        var productResult = await _products.GetProductByIdAsync(productId);
+        if (!productResult.IsSuccess || productResult.Value is null)
+            return JsonSerializer.Serialize(new { error = $"Product {productId} was not found." });
+
+        await _wishlist.AddItemAsync(userEmail, productId);
+        var product = productResult.Value;
+
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            message = $"Saved {product.Name} to your wishlist.",
+            productId,
+            products = new[] { product },
+        });
+    }
+
     private static List<int> ParseIds(JsonElement root, string prop)
     {
         var ids = new List<int>();
@@ -295,5 +376,7 @@ public static class AssistantToolCatalog
         new("getStorePolicies", "Retrieve store policies, FAQ, shipping, returns, warranty, payment info.", """{"type":"object","properties":{"topic":{"type":"string"}}}"""),
         new("getProductCategories", "List all product categories/types in the catalog.", """{"type":"object","properties":{}}"""),
         new("getReviewSummary", "Analyze customer reviews for a product. Returns sentiment breakdown and summary.", """{"type":"object","properties":{"productId":{"type":"integer"}},"required":["productId"]}"""),
+        new("addToCart", "Add a product to the shopper's cart. Requires productId from search or recommendations.", """{"type":"object","properties":{"productId":{"type":"integer"},"quantity":{"type":"integer"}},"required":["productId"]}"""),
+        new("addToWishlist", "Save a product to the signed-in user's wishlist.", """{"type":"object","properties":{"productId":{"type":"integer"}},"required":["productId"]}"""),
     ];
 }

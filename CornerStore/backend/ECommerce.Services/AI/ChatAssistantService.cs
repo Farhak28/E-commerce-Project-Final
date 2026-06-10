@@ -250,6 +250,7 @@ public sealed class ChatAssistantService : IChatAssistantService
             Cart product IDs: {string.Join(", ", ctx.CartProductIds ?? Array.Empty<int>())}
             Recently viewed IDs: {string.Join(", ", ctx.RecentProductIds ?? Array.Empty<int>())}
             Compare list IDs: {string.Join(", ", ctx.CompareIds ?? Array.Empty<int>())}
+            Basket ID: {(string.IsNullOrWhiteSpace(ctx.BasketId) ? "unavailable" : ctx.BasketId)}
             """;
 
         return $"""
@@ -263,6 +264,8 @@ public sealed class ChatAssistantService : IChatAssistantService
             - Be concise, friendly, and helpful for shopping.
             - When comparing products, summarize differences clearly with pros, cons, and a recommended choice.
             - Use getReviewSummary for review sentiment questions — never invent review opinions.
+            - When the user asks to add something to cart or wishlist, use searchProducts or prior context to resolve productId, then call addToCart or addToWishlist.
+            - addToWishlist requires the user to be signed in; addToCart uses the Basket ID from context.
             - If information is unavailable, say so.
 
             Retrieved knowledge:

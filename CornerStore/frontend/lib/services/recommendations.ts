@@ -20,6 +20,13 @@ export async function getSimilarProducts(productId: number, count = 5) {
   });
 }
 
+export async function getBoughtTogetherProducts(productId: number, count = 6) {
+  return apiClient<ProductDTO[]>(`/Recommendations/bought-together/${productId}`, {
+    params: { count },
+    skipAuth: true,
+  });
+}
+
 export async function getSimilarPriceProducts(productId: number, count = 6) {
   return apiClient<ProductDTO[]>(`/Recommendations/similar-price/${productId}`, {
     params: { count },

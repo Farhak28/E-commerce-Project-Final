@@ -4,6 +4,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useCart } from "@/lib/cart-context";
 
+function scrollToReviews() {
+  window.dispatchEvent(new CustomEvent("product:open-reviews-tab"));
+  requestAnimationFrame(() => {
+    document.getElementById("product-reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 export function ProductPurchaseActions({ productId }: { productId: number }) {
   const { addToCart } = useCart();
   const router = useRouter();
@@ -25,6 +32,9 @@ export function ProductPurchaseActions({ productId }: { productId: number }) {
       </Button>
       <Button type="button" variant="ghost" onClick={() => router.push("/cart")}>
         View cart
+      </Button>
+      <Button type="button" variant="ghost" onClick={scrollToReviews}>
+        Rate &amp; review
       </Button>
     </div>
   );

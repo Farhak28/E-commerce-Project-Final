@@ -32,6 +32,7 @@ const NAV: NavSection[] = [
       { href: "/admin/products", label: "Products", icon: "▦" },
       { href: "/admin/inventory", label: "Inventory", icon: "▥" },
       { href: "/admin/orders", label: "Orders", icon: "◎" },
+      { href: "/admin/coupons", label: "Coupons", icon: "◈" },
       { href: "/admin/users", label: "Customers", icon: "◌" },
       { href: "/admin/reviews", label: "Reviews", icon: "★" },
     ],

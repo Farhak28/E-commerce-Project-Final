@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Security.Claims;
 using ECommerce.Presentation.Attributes;
 using ECommerce.Services.Abstraction;
 using ECommerce.Shared.DTOs.AIDTOs;
@@ -88,12 +89,18 @@ namespace ECommerce.Presentation.Controllers
         }
 
         [HttpPost("{id}/reviews")]
+        [Authorize]
         public async Task<ActionResult<ReviewDTO>> AddProductReview(
             int id,
             [FromBody] CreateReviewDTO createReviewDto
         )
         {
-            var userName = User?.Identity?.Name ?? createReviewDto.UserName ?? "Guest";
+            var userName =
+                User.FindFirst("display_name")?.Value
+                ?? User.FindFirst(ClaimTypes.Email)?.Value
+                ?? User.Identity?.Name
+                ?? createReviewDto.UserName
+                ?? "Customer";
             var result = await _productService.AddReviewAsync(id, userName, createReviewDto);
             return HandleResult<ReviewDTO>(result);
         }

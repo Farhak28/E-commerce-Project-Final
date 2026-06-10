@@ -14,6 +14,24 @@ namespace ECommerce.Domain.Entities.OrderModule
 
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
+        public FulfillmentStage FulfillmentStage { get; set; } = FulfillmentStage.OrderPlaced;
+
+        public string? TrackingNumber { get; set; }
+
+        public string CarrierName { get; set; } = "Corner Store Logistics";
+
+        public DateTimeOffset? ConfirmedAt { get; set; }
+
+        public DateTimeOffset? ProcessingAt { get; set; }
+
+        public DateTimeOffset? ShippedAt { get; set; }
+
+        public DateTimeOffset? OutForDeliveryAt { get; set; }
+
+        public DateTimeOffset? DeliveredAt { get; set; }
+
+        public ICollection<OrderTrackingEvent> TrackingEvents { get; set; } = [];
+
         public OrderPaymentMethod PaymentMethod { get; set; } = OrderPaymentMethod.Card;
 
         public DateTimeOffset? ScheduledDeliveryAt { get; set; }
@@ -35,6 +53,22 @@ namespace ECommerce.Domain.Entities.OrderModule
 
         public decimal SubTotal { get; set; } // Quantity * Price
 
-        public decimal GetTotal() => SubTotal + DeliveryMethod.Price;
+        /// <summary>Delivery fee charged for this order (may include scheduled-slot surcharges).</summary>
+        public decimal DeliveryPrice { get; set; }
+
+        public string? CouponCode { get; set; }
+
+        public Guid? UserCouponId { get; set; }
+
+        public decimal DiscountAmount { get; set; }
+
+        /// <summary>True when this order's item quantities have been subtracted from product stock.</summary>
+        public bool StockDeducted { get; set; }
+
+        public decimal GetTotal()
+        {
+            var delivery = DeliveryPrice > 0 ? DeliveryPrice : DeliveryMethod.Price;
+            return Math.Max(0, SubTotal + delivery - DiscountAmount);
+        }
     }
 }

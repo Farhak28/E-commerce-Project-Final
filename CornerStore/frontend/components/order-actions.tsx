@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { useAppPreferences } from "@/components/theme-provider";
 import { t } from "@/lib/i18n";
 import * as ordersService from "@/lib/services/orders";
-import type { OrderToReturnDTO } from "@/lib/types";
+import type { DeliveryQuoteDTO, OrderToReturnDTO } from "@/lib/types";
 import { formatScheduledDelivery } from "@/lib/utils/order-status";
 
 type Props = {
@@ -37,8 +37,31 @@ export function OrderActions({ order, onUpdated }: Props) {
       ? new Date(order.scheduledDeliveryAt).toISOString().slice(0, 16)
       : minScheduleValue(),
   );
+  const [scheduleQuote, setScheduleQuote] = useState<DeliveryQuoteDTO | null>(null);
 
   const scheduledLabel = formatScheduledDelivery(order.scheduledDeliveryAt);
+
+  useEffect(() => {
+    if (!showScheduleForm || !order.deliveryMethodId || !scheduleAt) {
+      setScheduleQuote(null);
+      return;
+    }
+
+    let cancelled = false;
+    const iso = new Date(scheduleAt).toISOString();
+    void ordersService
+      .getDeliveryQuote(order.deliveryMethodId, iso)
+      .then((quote) => {
+        if (!cancelled) setScheduleQuote(quote);
+      })
+      .catch(() => {
+        if (!cancelled) setScheduleQuote(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showScheduleForm, order.deliveryMethodId, scheduleAt]);
 
   const runAction = async (key: string, action: () => Promise<OrderToReturnDTO>) => {
     setLoading(key);
@@ -190,6 +213,29 @@ export function OrderActions({ order, onUpdated }: Props) {
           <p className="text-xs text-text-muted">
             {ready ? t("scheduleHint", language) : "Must be at least 2 hours from now, within 14 days."}
           </p>
+          {scheduleQuote ? (
+            <div className="space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+              <p className="font-semibold">Updated delivery cost</p>
+              {scheduleQuote.lines.map((line) => (
+                <div key={line.label} className="flex justify-between gap-2 text-text-muted">
+                  <span>{line.label}</span>
+                  <span>
+                    {line.amount < 0 ? "-" : ""}${Math.abs(line.amount).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+              <div className="flex justify-between border-t border-border pt-2 font-semibold">
+                <span>Total shipping</span>
+                <span>${scheduleQuote.totalPrice.toFixed(2)}</span>
+              </div>
+              {typeof order.deliveryPrice === "number" &&
+              scheduleQuote.totalPrice !== order.deliveryPrice ? (
+                <p className="text-xs text-text-muted">
+                  Current shipping: ${order.deliveryPrice.toFixed(2)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <Button
             type="button"
             disabled={!!loading || !scheduleAt}

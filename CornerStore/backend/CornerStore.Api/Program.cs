@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using ECommerce.API.CustomMiddlewares;
 using ECommerce.API.Extensions;
@@ -154,8 +155,16 @@ namespace ECommerce.API
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(builder.Configuration["JWTOptions:SecretKey"]!)
                         ),
+                        RoleClaimType = ClaimTypes.Role,
+                        NameClaimType = ClaimTypes.Name,
                     };
                 });
+
+            builder.Services.Configure<OrderFulfillmentOptions>(
+                builder.Configuration.GetSection(OrderFulfillmentOptions.SectionName)
+            );
+            builder.Services.AddScoped<IOrderFulfillmentService, OrderFulfillmentService>();
+            builder.Services.AddHostedService<OrderFulfillmentBackgroundService>();
 
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IPaymentService, PaymentService>();
@@ -167,6 +176,8 @@ namespace ECommerce.API
             builder.Services.AddScoped<IRecommendationService, RecommendationService>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IAccountService, AccountService>();
+            builder.Services.AddScoped<ICouponService, CouponService>();
+            builder.Services.AddScoped<IInventoryStockService, InventoryStockService>();
             builder.Services.AddScoped<ProductImageStorage>();
 
             builder.Services.Configure<AiOptions>(builder.Configuration.GetSection(AiOptions.SectionName));
@@ -195,6 +206,7 @@ namespace ECommerce.API
             await app.MigratIdentityeDataBaseAsync();
 
             await app.SeedDataAsync();
+            await app.ReconcileInventoryStockAsync();
             await app.SeedIdentityDataAsync();
             await app.SeedNotificationsAsync();
             await AiKnowledgeSeeder.SeedAsync(app.Services);

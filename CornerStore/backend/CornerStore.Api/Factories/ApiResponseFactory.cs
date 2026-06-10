@@ -7,10 +7,10 @@ namespace ECommerce.API.Factories
         public static IActionResult GenerateApiValidationResponse(ActionContext actionContext)
         {
             var errors = actionContext
-                .ModelState.Where(X => X.Value.Errors.Count > 0)
+                .ModelState.Where(entry => entry.Value is { Errors.Count: > 0 })
                 .ToDictionary(
-                    X => X.Key,
-                    X => X.Value.Errors.Select(X => X.ErrorMessage).ToArray()
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors.Select(error => error.ErrorMessage).ToArray()
                 );
 
             var problem = new ProblemDetails()

@@ -12,6 +12,9 @@ namespace ECommerce.Shared.DTOs.BasketDTOs
 
         public int? DeliveryMethodId { get; set; }
         public decimal ShippingPrice { get; set; }
+        public DateTimeOffset? ScheduledDeliveryAt { get; set; }
+        public string? CouponCode { get; set; }
+        public decimal DiscountAmount { get; set; }
 
         public string? PaymentIntentID { get; set; }
 

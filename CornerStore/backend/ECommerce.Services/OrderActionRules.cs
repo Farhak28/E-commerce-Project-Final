@@ -10,7 +10,8 @@ internal static class OrderActionRules
     private static readonly TimeSpan MinScheduleLeadTime = TimeSpan.FromHours(2);
 
     public static bool CanCancel(Order order) =>
-        order.Status is OrderStatus.Pending or OrderStatus.PaymentReceived;
+        order.Status is OrderStatus.Pending or OrderStatus.PaymentReceived
+        && order.FulfillmentStage < FulfillmentStage.Shipped;
 
     public static bool CanReturn(Order order)
     {

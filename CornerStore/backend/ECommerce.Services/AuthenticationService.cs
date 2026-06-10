@@ -289,6 +289,7 @@ namespace ECommerce.Services
             {
                 new Claim(JwtRegisteredClaimNames.Email, user.Email!),
                 new Claim(JwtRegisteredClaimNames.Name, user.UserName!),
+                new Claim("display_name", user.DisplayName ?? user.Email!),
             };
 
             var roles = await _userManager.GetRolesAsync(user);

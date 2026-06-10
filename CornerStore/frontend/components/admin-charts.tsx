@@ -61,6 +61,11 @@ export function AdminCharts({
       ].filter((i) => i.value > 0)
     : [];
 
+  const fulfillmentItems = (analytics.fulfillmentByStage ?? []).map((s) => ({
+    label: s.stage.replace(/([A-Z])/g, " $1").trim(),
+    value: s.count,
+  }));
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
@@ -75,8 +80,16 @@ export function AdminCharts({
           <BarChart items={statusItems} />
         </div>
       </Card>
+      {fulfillmentItems.length > 0 ? (
+        <Card>
+          <h2 className="section-title text-lg font-semibold">Fulfillment pipeline</h2>
+          <div className="mt-4">
+            <BarChart items={fulfillmentItems} />
+          </div>
+        </Card>
+      ) : null}
       {aiToolItems.length > 0 ? (
-        <Card className="lg:col-span-2">
+        <Card className={fulfillmentItems.length > 0 ? "" : "lg:col-span-2"}>
           <h2 className="section-title text-lg font-semibold">AI tool usage</h2>
           <p className="mt-1 text-sm text-text-muted">Real counts from assistant interaction logs.</p>
           <div className="mt-4">

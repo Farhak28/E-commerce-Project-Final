@@ -397,10 +397,39 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.Property<DateTimeOffset?>("CancelledAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("CarrierName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("Corner Store Logistics");
+
+                    b.Property<DateTimeOffset?>("ConfirmedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset?>("DeliveredAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<int>("DeliveryMethodId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("DeliveryPrice")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<int>("FulfillmentStage")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("OrderDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("OutForDeliveryAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("PaymentIntentId")
@@ -409,6 +438,9 @@ namespace ECommerce.Persistence.Data.Migrations
 
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("ProcessingAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("ReturnReason")
                         .HasColumnType("nvarchar(max)");
@@ -419,11 +451,24 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.Property<DateTimeOffset?>("ScheduledDeliveryAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("ShippedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<bool>("StockDeducted")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("SubTotal")
                         .HasColumnType("decimal(8,2)");
+
+                    b.Property<string>("TrackingNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid?>("UserCouponId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("UserEmail")
                         .IsRequired()
@@ -458,6 +503,117 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.HasIndex("OrderId");
 
                     b.ToTable("OrderItem");
+                });
+
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.OrderTrackingEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Stage")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("OrderTrackingEvents", (string)null);
+                });
+
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.UserCoupon", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DiscountType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("MaxDiscount")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<decimal>("MinOrderAmount")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<string>("RewardKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UsedOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("UserEmail");
+
+                    b.HasIndex("UserEmail", "RewardKey")
+                        .IsUnique();
+
+                    b.ToTable("UserCoupons", (string)null);
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.ProductModule.Product", b =>
@@ -517,6 +673,9 @@ namespace ECommerce.Persistence.Data.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OfficialWebsiteUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -683,6 +842,17 @@ namespace ECommerce.Persistence.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.OrderTrackingEvent", b =>
+                {
+                    b.HasOne("ECommerce.Domain.Entities.OrderModule.Order", "Order")
+                        .WithMany("TrackingEvents")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("ECommerce.Domain.Entities.ProductModule.Product", b =>
                 {
                     b.HasOne("ECommerce.Domain.Entities.ProductModule.ProductBrand", "ProductBrand")
@@ -726,6 +896,8 @@ namespace ECommerce.Persistence.Data.Migrations
             modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("TrackingEvents");
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.ProductModule.Product", b =>

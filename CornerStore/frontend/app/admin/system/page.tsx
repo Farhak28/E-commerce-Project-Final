@@ -68,6 +68,17 @@ export default function AdminSystemPage() {
               <p className="text-sm"><span className="text-text-muted">Documents:</span> {knowledge?.documentCount ?? "—"}</p>
               <p className="text-sm"><span className="text-text-muted">Chunks:</span> {knowledge?.chunkCount ?? "—"}</p>
             </Card>
+            <Card className="space-y-3 md:col-span-2">
+              <h2 className="font-semibold">Order fulfillment worker</h2>
+              <p className="text-sm text-text-muted">
+                Background service auto-advances shipment stages for demo presentations. Configure via{" "}
+                <code className="rounded bg-surface-2 px-1">OrderFulfillment</code> in appsettings
+                (DemoAutoAdvance, StageIntervalMinutes, WorkerIntervalSeconds).
+              </p>
+              <p className="text-sm text-text-muted">
+                Admins can manually advance orders from the order detail page for live demos.
+              </p>
+            </Card>
           </div>
         </>
       )}

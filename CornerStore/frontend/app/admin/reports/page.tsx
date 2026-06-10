@@ -31,11 +31,16 @@ export default function AdminReportsPage() {
         <AdminLoadingGrid count={4} />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             <AdminStatCard label="Total reviews" value={reports?.totalReviews ?? "—"} />
             <AdminStatCard label="Average rating" value={reports ? reports.averageRating.toFixed(1) : "—"} />
             <AdminStatCard label="Low stock products" value={reports?.lowStockProducts ?? "—"} tone="warning" />
             <AdminStatCard label="AI conversations" value={analytics?.assistantUsageEstimate ?? "—"} />
+            <AdminStatCard label="Scheduled deliveries" value={analytics?.scheduledDeliveriesCount ?? "—"} />
+            <AdminStatCard
+              label="Coupon discounts"
+              value={analytics ? `$${analytics.totalDiscountsGiven.toFixed(2)}` : "—"}
+            />
           </div>
           <AdminCharts analytics={analytics} ai={null} />
         </>

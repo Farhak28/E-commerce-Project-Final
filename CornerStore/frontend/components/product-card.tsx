@@ -11,8 +11,17 @@ import { useAuth } from "@/lib/auth-context";
 import { useAppPreferences } from "@/components/theme-provider";
 import { t } from "@/lib/i18n";
 import { useCompare } from "@/lib/compare-context";
+import { trackRecommendationClick } from "@/lib/services/recommendations";
 
-export function ProductCard({ product, layout = "grid" }: { product: Product; layout?: "grid" | "list" }) {
+export function ProductCard({
+  product,
+  layout = "grid",
+  recommendationSource,
+}: {
+  product: Product;
+  layout?: "grid" | "list";
+  recommendationSource?: string;
+}) {
   const { addToCart } = useCart();
   const { toggle, has } = useWishlist();
   const { isSignedIn } = useAuth();
@@ -20,6 +29,11 @@ export function ProductCard({ product, layout = "grid" }: { product: Product; la
   const { toggleCompare, has: hasCompare } = useCompare();
   const saved = has(product.id);
   const [adding, setAdding] = useState(false);
+
+  const trackRecoClick = () => {
+    if (!recommendationSource) return;
+    void trackRecommendationClick(recommendationSource, product.id);
+  };
 
   const handleAdd = async () => {
     setAdding(true);
@@ -33,12 +47,20 @@ export function ProductCard({ product, layout = "grid" }: { product: Product; la
   if (layout === "list") {
     return (
       <article className="group flex gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-4 transition hover:shadow-[var(--shadow-lg)]">
-        <Link href={`/products/${product.id}`} className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl">
+        <Link
+          href={`/products/${product.id}`}
+          className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl"
+          onClick={trackRecoClick}
+        >
           <ProductImage src={product.pictureUrl} alt={product.name} fill sizes="112px" className="object-cover" />
         </Link>
         <div className="min-w-0 flex-1">
           <p className="text-xs text-text-muted">{product.productType}</p>
-          <Link href={`/products/${product.id}`} className="section-title line-clamp-1 text-lg font-semibold hover:text-primary">
+          <Link
+            href={`/products/${product.id}`}
+            className="section-title line-clamp-1 text-lg font-semibold hover:text-primary"
+            onClick={trackRecoClick}
+          >
             {product.name}
           </Link>
           <p className="mt-1 line-clamp-2 text-sm text-text-muted">{product.description}</p>
@@ -51,7 +73,7 @@ export function ProductCard({ product, layout = "grid" }: { product: Product; la
           <Button size="sm" onClick={() => void handleAdd()} disabled={adding}>
             {ready ? t("addToCart", language) : "Add"}
           </Button>
-          <Link href={`/products/${product.id}`}>
+          <Link href={`/products/${product.id}`} onClick={trackRecoClick}>
             <Button size="sm" variant="ghost">{ready ? t("view", language) : "View"}</Button>
           </Link>
         </div>
@@ -62,7 +84,7 @@ export function ProductCard({ product, layout = "grid" }: { product: Product; la
   return (
     <article className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow)] transition hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
       <div className="relative aspect-[4/5] overflow-hidden bg-surface-2">
-        <Link href={`/products/${product.id}`} className="absolute inset-0">
+        <Link href={`/products/${product.id}`} className="absolute inset-0" onClick={trackRecoClick}>
           <ProductImage
             src={product.pictureUrl}
             alt={product.name}
@@ -100,7 +122,11 @@ export function ProductCard({ product, layout = "grid" }: { product: Product; la
       </div>
       <div className="p-4">
         <p className="text-xs text-text-muted">{product.productBrand}</p>
-        <Link href={`/products/${product.id}`} className="section-title mt-0.5 line-clamp-2 text-base font-semibold leading-snug hover:text-primary">
+        <Link
+          href={`/products/${product.id}`}
+          className="section-title mt-0.5 line-clamp-2 text-base font-semibold leading-snug hover:text-primary"
+          onClick={trackRecoClick}
+        >
           {product.name}
         </Link>
         <div className="mt-2 flex items-center justify-between">

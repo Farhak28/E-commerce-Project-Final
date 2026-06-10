@@ -43,9 +43,10 @@ export default function AdminKnowledgePage() {
 
   useEffect(() => {
     void refresh()
-      .catch(() => {
+      .catch((err) => {
         setDocs([]);
         setStats(null);
+        setError(err instanceof Error ? err.message : "Failed to load knowledge base");
       })
       .finally(() => setLoading(false));
   }, [refresh]);
@@ -119,6 +120,13 @@ export default function AdminKnowledgePage() {
           </Button>
         }
       />
+
+      {error && !loading ? (
+        <Card className="border-accent/40 bg-accent/5">
+          <p className="text-sm font-semibold text-accent">Could not load knowledge base</p>
+          <p className="mt-1 text-sm text-text-muted">{error}</p>
+        </Card>
+      ) : null}
 
       {stats ? (
         <div className="grid gap-4 sm:grid-cols-3">

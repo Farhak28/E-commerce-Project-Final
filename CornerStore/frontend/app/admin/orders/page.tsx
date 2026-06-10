@@ -7,7 +7,7 @@ import { OrderStatusBadge } from "@/components/order-status-badge";
 import Link from "next/link";
 import { getAdminOrders } from "@/lib/services/admin";
 import type { OrderToReturnDTO } from "@/lib/types";
-import { formatOrderDate } from "@/lib/utils/order-status";
+import { formatFulfillmentStage, formatOrderDate } from "@/lib/utils/order-status";
 
 const STATUS_OPTIONS = ["", "Pending", "PaymentReceived", "PaymentFailed", "Cancelled", "ReturnRequested", "Returned"];
 
@@ -48,7 +48,10 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Orders" description="View and filter customer orders across all payment methods." />
+      <AdminPageHeader
+        title="Orders"
+        description="Fulfillment tracking, scheduled delivery pricing, loyalty coupons, and payment status."
+      />
 
       <div className="space-y-4 rounded-2xl border border-border bg-surface/80 p-4">
         <AdminSearchBar
@@ -102,11 +105,17 @@ export default function AdminOrdersPage() {
       ) : (
         <>
           <AdminTable
-            columns={["Order", "Customer", "Total", "Status", "Date", ""]}
+            columns={["Order", "Customer", "Total", "Fulfillment", "Status", "Date", ""]}
             rows={orders.map((order) => [
               <span key="id" className="font-mono text-xs">{order.id.slice(0, 8)}…</span>,
               order.userEmail,
-              `$${order.total.toFixed(2)}`,
+              <span key="total">
+                ${order.total.toFixed(2)}
+                {order.discountAmount ? (
+                  <span className="block text-xs text-emerald-600">-${order.discountAmount.toFixed(2)}</span>
+                ) : null}
+              </span>,
+              order.fulfillmentStage ? formatFulfillmentStage(order.fulfillmentStage) : "—",
               <OrderStatusBadge key="status" status={order.status} paymentMethod={order.paymentMethod} />,
               formatOrderDate(order.orderDate),
               <Link key="view" href={`/admin/orders/${order.id}`} className="text-sm font-semibold text-primary">

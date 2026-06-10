@@ -14,10 +14,12 @@ namespace ECommerce.Presentation.Controllers
     public class OrdersController : ApiBaseController
     {
         private readonly IOrderService _orderService;
+        private readonly IOrderFulfillmentService _fulfillment;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(IOrderService orderService, IOrderFulfillmentService fulfillment)
         {
             _orderService = orderService;
+            _fulfillment = fulfillment;
         }
 
         [Authorize]
@@ -60,6 +62,20 @@ namespace ECommerce.Presentation.Controllers
             return HandleResult(result);
         }
 
+        [AllowAnonymous]
+        [HttpGet("deliveryQuote")]
+        public async Task<ActionResult<DeliveryQuoteDTO>> GetDeliveryQuote(
+            [FromQuery] int deliveryMethodId,
+            [FromQuery] DateTimeOffset? scheduledDeliveryAt = null
+        )
+        {
+            var result = await _orderService.GetDeliveryQuoteAsync(
+                deliveryMethodId,
+                scheduledDeliveryAt
+            );
+            return HandleResult(result);
+        }
+
         [Authorize]
         [HttpPost("{id:guid}/cancel")]
         public async Task<ActionResult<OrderToReturnDTO>> CancelOrder(Guid id)
@@ -81,6 +97,22 @@ namespace ECommerce.Presentation.Controllers
         public async Task<ActionResult<OrderToReturnDTO>> ScheduleOrder(Guid id, ScheduleOrderDTO dto)
         {
             var result = await _orderService.ScheduleOrderAsync(id, GetEmailFromToken(), dto);
+            return HandleResult(result);
+        }
+
+        [Authorize]
+        [HttpGet("{id:guid}/tracking")]
+        public async Task<ActionResult<OrderTrackingDTO>> GetOrderTracking(Guid id)
+        {
+            var result = await _fulfillment.GetTrackingAsync(id, GetEmailFromToken());
+            return HandleResult(result);
+        }
+
+        [Authorize]
+        [HttpPost("{id:guid}/tracking/advance")]
+        public async Task<ActionResult<OrderTrackingDTO>> AdvanceOrderTracking(Guid id)
+        {
+            var result = await _fulfillment.AdvanceTrackingAsync(id, GetEmailFromToken());
             return HandleResult(result);
         }
     }

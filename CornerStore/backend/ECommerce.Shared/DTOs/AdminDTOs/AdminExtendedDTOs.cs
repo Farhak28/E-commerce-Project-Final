@@ -130,5 +130,23 @@ public record AdminStatsDTO(
     decimal Revenue,
     int ProductsCount,
     int PendingOrdersCount,
-    int LowStockCount
+    int LowStockCount,
+    int ActiveShipmentsCount,
+    int DeliveredOrdersCount,
+    int ScheduledDeliveriesCount,
+    int ActiveCouponsCount,
+    int RedeemedCouponsCount,
+    decimal TotalDiscountsGiven,
+    int ReviewsCount,
+    int BrandsWithOfficialUrlCount
 );
+
+public record AdminCouponsSummaryDTO(
+    int ActiveCoupons,
+    int RedeemedCoupons,
+    int ExpiredCoupons,
+    decimal TotalDiscountsGiven,
+    IReadOnlyList<AdminCouponTierDTO> CouponsByReward
+);
+
+public record AdminCouponTierDTO(string RewardKey, int Active, int Redeemed);

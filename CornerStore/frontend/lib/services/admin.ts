@@ -1,7 +1,9 @@
 import { apiClient, apiUpload } from "@/lib/services/api-client";
 import type {
   AdminAnalyticsDTO,
+  AdminCouponsSummaryDTO,
   AdminListQueryParams,
+  OrderTrackingDTO,
   AdminOrderQueryParams,
   AdminPagedResult,
   AdminReportsDTO,
@@ -106,6 +108,18 @@ export async function getAdminOrders(
 
 export async function getAdminOrderById(id: string): Promise<OrderToReturnDTO> {
   return apiClient<OrderToReturnDTO>(`/Admin/orders/${id}`);
+}
+
+export async function getAdminOrderTracking(id: string): Promise<OrderTrackingDTO> {
+  return apiClient<OrderTrackingDTO>(`/Admin/orders/${id}/tracking`);
+}
+
+export async function advanceAdminOrderTracking(id: string): Promise<OrderTrackingDTO> {
+  return apiClient<OrderTrackingDTO>(`/Admin/orders/${id}/tracking/advance`, { method: "POST" });
+}
+
+export async function getAdminCouponsSummary(): Promise<AdminCouponsSummaryDTO> {
+  return apiClient<AdminCouponsSummaryDTO>("/Admin/coupons/summary");
 }
 
 export async function getAdminReviews(

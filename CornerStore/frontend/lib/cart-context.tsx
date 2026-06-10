@@ -26,11 +26,20 @@ type CartContextValue = {
   setQty: (productId: number, qty: number) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
-  syncBasket: (deliveryMethodId?: number | null) => Promise<BasketDTO>;
-  setDeliveryMethod: (deliveryMethodId: number) => Promise<void>;
+  syncBasket: (
+    deliveryMethodId?: number | null,
+    scheduledDeliveryAt?: string | null,
+    shippingPrice?: number | null,
+  ) => Promise<BasketDTO>;
+  setDeliveryMethod: (
+    deliveryMethodId: number,
+    scheduledDeliveryAt?: string | null,
+    shippingPrice?: number | null,
+  ) => Promise<void>;
   cartCount: number;
   subtotal: number;
   shippingPrice: number;
+  discountAmount: number;
   basket: BasketDTO | null;
 };
 
@@ -85,18 +94,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const syncBasket = useCallback(async (deliveryMethodId?: number | null) => {
-    const basketId = getOrCreateBasketId();
-    if (!basket?.items.length) {
-      throw new Error("Your cart is empty.");
-    }
-    const saved = await persistBasket({
-      ...basket,
-      id: basketId,
-      deliveryMethodId: deliveryMethodId ?? basket.deliveryMethodId,
-    });
-    return saved;
-  }, [basket, persistBasket]);
+  const syncBasket = useCallback(
+    async (
+      deliveryMethodId?: number | null,
+      scheduledDeliveryAt?: string | null,
+      shippingPrice?: number | null,
+    ) => {
+      const basketId = getOrCreateBasketId();
+      if (!basket?.items.length) {
+        throw new Error("Your cart is empty.");
+      }
+      const saved = await persistBasket({
+        ...basket,
+        id: basketId,
+        deliveryMethodId: deliveryMethodId ?? basket.deliveryMethodId,
+        scheduledDeliveryAt:
+          scheduledDeliveryAt === undefined ? basket.scheduledDeliveryAt ?? null : scheduledDeliveryAt,
+        shippingPrice: shippingPrice ?? basket.shippingPrice,
+      });
+      return saved;
+    },
+    [basket, persistBasket],
+  );
 
   useEffect(() => {
     void (async () => {
@@ -191,10 +210,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [basket]);
 
   const setDeliveryMethod = useCallback(
-    async (deliveryMethodId: number) => {
+    async (
+      deliveryMethodId: number,
+      scheduledDeliveryAt?: string | null,
+      shippingPrice?: number | null,
+    ) => {
       if (!basket) return;
       try {
-        await persistBasket({ ...basket, deliveryMethodId });
+        await persistBasket({
+          ...basket,
+          deliveryMethodId,
+          scheduledDeliveryAt: scheduledDeliveryAt ?? null,
+          ...(shippingPrice != null ? { shippingPrice } : {}),
+        });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to set delivery method");
       }
@@ -230,6 +258,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cartCount,
       subtotal,
       shippingPrice: basket?.shippingPrice ?? 0,
+      discountAmount: basket?.discountAmount ?? 0,
       basket,
     }),
     [

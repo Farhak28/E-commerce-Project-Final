@@ -14,6 +14,9 @@ namespace ECommerce.Persistence.Data.Configurations
         public void Configure(EntityTypeBuilder<Order> builder)
         {
             builder.Property(X => X.SubTotal).HasColumnType("decimal(8,2)");
+            builder.Property(x => x.DeliveryPrice).HasColumnType("decimal(8,2)");
+            builder.Property(x => x.DiscountAmount).HasColumnType("decimal(8,2)");
+            builder.Property(x => x.CouponCode).HasMaxLength(32);
 
             builder.OwnsOne(
                 X => X.Address,
@@ -26,6 +29,9 @@ namespace ECommerce.Persistence.Data.Configurations
                     OE.Property(X => X.Country).HasMaxLength(50);
                 }
             );
+
+            builder.Property(x => x.TrackingNumber).HasMaxLength(32);
+            builder.Property(x => x.CarrierName).HasMaxLength(100).HasDefaultValue("Corner Store Logistics");
         }
     }
 }

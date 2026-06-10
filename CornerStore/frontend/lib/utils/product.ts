@@ -32,6 +32,7 @@ export function mapProductDTO(dto: ProductDTO): Product {
     price: dto.price,
     productType: dto.productType,
     productBrand: dto.productBrand,
+    brandOfficialUrl: dto.brandOfficialUrl,
     rating: hasReviews && dto.averageRating != null ? dto.averageRating : getStableRating(dto.id),
     reviewCount: dto.reviewCount,
     stock: dto.stockQuantity ?? getStableStock(dto.id),

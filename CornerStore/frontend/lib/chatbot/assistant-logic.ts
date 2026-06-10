@@ -52,6 +52,7 @@ export type AssistantQueryOptions = {
   compareIds?: number[];
   cartProductIds?: number[];
   recentProductIds?: number[];
+  basketId?: string | null;
 };
 
 export function parseIntent(query: string): {

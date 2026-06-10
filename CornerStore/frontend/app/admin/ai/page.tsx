@@ -17,16 +17,19 @@ export default function AdminAiOverviewPage() {
   const [ai, setAi] = useState<AdminAiOverviewDTO | null>(null);
   const [knowledge, setKnowledge] = useState<KnowledgeStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void Promise.all([getAdminAiOverview(), getAdminKnowledgeStats()])
       .then(([overview, stats]) => {
         setAi(overview);
         setKnowledge(stats);
+        setError(null);
       })
-      .catch(() => {
+      .catch((e) => {
         setAi(null);
         setKnowledge(null);
+        setError(e instanceof Error ? e.message : "Failed to load AI overview");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -43,9 +46,20 @@ export default function AdminAiOverviewPage() {
         }
       />
 
+      {error ? (
+        <Card className="border-accent/40 bg-accent/5">
+          <p className="text-sm font-semibold text-accent">Could not load AI data</p>
+          <p className="mt-1 text-sm text-text-muted">{error}</p>
+          <p className="mt-2 text-xs text-text-muted">
+            Sign in as Admin/SuperAdmin, ensure the API is running, and apply database migrations
+            (AI tables: KnowledgeDocuments, KnowledgeChunks, AssistantInteractionLogs).
+          </p>
+        </Card>
+      ) : null}
+
       {loading ? (
         <AdminLoadingGrid count={6} />
-      ) : (
+      ) : !error ? (
         <>
           <div className="flex flex-wrap gap-2">
             <HealthPill ok={!!ai?.geminiConfigured} label={ai?.geminiConfigured ? "Gemini connected" : "Gemini not configured"} />
@@ -71,7 +85,7 @@ export default function AdminAiOverviewPage() {
             </div>
           </Card>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

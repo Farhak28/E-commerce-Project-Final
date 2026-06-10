@@ -8,7 +8,7 @@ import { OrderStatusBadge } from "@/components/order-status-badge";
 import { useAuth } from "@/lib/auth-context";
 import { getOrders } from "@/lib/services/orders";
 import type { OrderToReturnDTO } from "@/lib/types";
-import { formatOrderDate } from "@/lib/utils/order-status";
+import { formatFulfillmentStage, formatOrderDate } from "@/lib/utils/order-status";
 
 function OrderHistoryContent() {
   const { isSignedIn } = useAuth();
@@ -68,6 +68,21 @@ function OrderHistoryContent() {
                   />
                 </div>
                 <p className="mt-1 text-xs text-text-muted">{formatOrderDate(order.orderDate)}</p>
+                {order.trackingHeadline || order.fulfillmentStage ? (
+                  <div className="mt-2 space-y-1.5">
+                    <p className="text-sm font-medium">
+                      {order.trackingHeadline ?? formatFulfillmentStage(order.fulfillmentStage ?? "")}
+                    </p>
+                    {typeof order.progressPercent === "number" && order.status !== "Cancelled" ? (
+                      <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-500"
+                          style={{ width: `${order.progressPercent}%` }}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <p className="mt-2 text-sm font-semibold">${order.total.toFixed(2)}</p>
               </Card>
             </Link>

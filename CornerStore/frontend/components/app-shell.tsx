@@ -165,7 +165,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <span suppressHydrationWarning>{t("account", language)}</span>
                 </Link>
                 {isAdmin ? (
-                  <Link href="/admin" className="hidden rounded-xl border border-border px-3 py-1.5 text-xs lg:inline-flex">Admin</Link>
+                  <Link
+                    href="/admin"
+                    className="hidden rounded-xl border border-border px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-2 lg:inline-flex"
+                  >
+                    Admin
+                  </Link>
                 ) : null}
                 <button type="button" className="hidden rounded-xl px-3 py-2 text-sm text-text-muted hover:bg-surface-2 lg:inline-flex" onClick={signOut}>
                   {language === "ar" ? "خروج" : "Sign out"}

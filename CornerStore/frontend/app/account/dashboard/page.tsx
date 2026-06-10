@@ -95,6 +95,13 @@ export default function DashboardPage() {
           <p className="text-sm text-text-muted">Reward points</p>
           <p className="mt-2 text-2xl font-bold">{data.rewardPoints.toLocaleString()}</p>
         </Card>
+        <Card>
+          <p className="text-sm text-text-muted">Available coupons</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{data.availableCoupons}</p>
+          <Link href="/account/coupons" className="mt-2 inline-flex text-xs font-semibold text-primary">
+            View rewards
+          </Link>
+        </Card>
       </div>
       <Card>
         <p className="text-sm text-text-muted">Profile completion</p>

@@ -6,6 +6,7 @@ public record AccountDashboardDTO(
     int RewardPoints,
     string LoyaltyTier,
     int ProfileCompletionPercent,
+    int AvailableCoupons,
     IReadOnlyList<string> TopInterests,
     IReadOnlyList<string> SavedPreferences,
     string? LastViewedSummary

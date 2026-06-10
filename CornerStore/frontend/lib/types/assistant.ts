@@ -4,6 +4,7 @@ export type AssistantContextDTO = {
   cartProductIds?: number[];
   recentProductIds?: number[];
   compareIds?: number[];
+  basketId?: string | null;
 };
 
 export type AssistantChatMessageDTO = {

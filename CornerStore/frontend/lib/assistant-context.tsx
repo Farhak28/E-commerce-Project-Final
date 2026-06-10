@@ -11,11 +11,14 @@ import {
 } from "react";
 import Link from "next/link";
 import { Button, Input, TypingIndicator } from "@/components/ui";
+import { useCameraCapture } from "@/components/camera-capture";
 import { useAppPreferences } from "@/components/theme-provider";
 import { useCompare } from "@/lib/compare-context";
 import { useAuth } from "@/lib/auth-context";
 import { t } from "@/lib/i18n";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
+import { getOrCreateBasketId } from "@/lib/utils/basket";
 import { getRecentlyViewedIds } from "@/lib/utils/recently-viewed";
 import {
   getAssistantSessionId,
@@ -106,9 +109,9 @@ function AssistantPanelContent({
   const [geminiReady, setGeminiReady] = useState<boolean | null>(null);
   const { compareIds, toggleCompare, clearCompare } = useCompare();
   const { isSignedIn } = useAuth();
-  const { lineItems } = useCart();
+  const { lineItems, refreshCart } = useCart();
+  const { refresh: refreshWishlist } = useWishlist();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(true);
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -142,10 +145,13 @@ function AssistantPanelContent({
             compareIds,
             cartProductIds: lineItems.map((l) => l.product.id),
             recentProductIds: getRecentlyViewedIds(),
+            basketId: getOrCreateBasketId(),
           },
         );
         if (!mountedRef.current) return;
         setMessages((m) => [...m, reply]);
+        await refreshCart();
+        if (isSignedIn) await refreshWishlist();
       } catch {
         if (!mountedRef.current) return;
         setMessages((m) => [...m, { role: "assistant", text: "Something went wrong. Please try again." }]);
@@ -153,7 +159,7 @@ function AssistantPanelContent({
         if (mountedRef.current) setLoading(false);
       }
     },
-    [isSignedIn, compareIds, lineItems, messages, setMessages],
+    [isSignedIn, compareIds, lineItems, messages, setMessages, refreshCart, refreshWishlist],
   );
 
   const runVisualSearch = useCallback(
@@ -215,12 +221,17 @@ function AssistantPanelContent({
     [runVisualSearch],
   );
 
+  const { openGallery, openCamera, inputs: cameraInputs } = useCameraCapture((file) => {
+    void runVisualSearch(file);
+  });
+
   const panelTitle = ready ? t("aiAssistant", language) : "AI Shopping Assistant";
   const showWelcome = messages.length === 0 && !loading;
   const sessionId = getAssistantSessionId();
 
   return (
     <>
+      {cameraInputs}
       <button
         type="button"
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-fade md:bg-black/30"
@@ -323,17 +334,6 @@ function AssistantPanelContent({
         ) : null}
 
         <div className="shrink-0 border-t border-border p-4">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => {
-              onFileSelected(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
           <div
             className={`mb-3 rounded-xl border border-dashed px-3 py-2 text-center text-[11px] transition ${
               dragOver ? "border-primary bg-primary/5" : "border-border text-text-muted"
@@ -349,11 +349,19 @@ function AssistantPanelContent({
             <button
               type="button"
               className="font-semibold text-primary hover:underline"
-              onClick={() => fileRef.current?.click()}
+              onClick={openGallery}
             >
               Upload photo
             </button>
-            <span> · drag & drop · camera</span>
+            <span> · </span>
+            <button
+              type="button"
+              className="font-semibold text-primary hover:underline"
+              onClick={openCamera}
+            >
+              Camera
+            </button>
+            <span> · drag & drop</span>
           </div>
           {uploadError ? <p className="mb-2 text-xs text-red-500">{uploadError}</p> : null}
           <div className="flex gap-2">

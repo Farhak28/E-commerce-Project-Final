@@ -18,6 +18,11 @@ namespace ECommerce.Services.Abstraction
 
         Task<Result<IEnumerable<DeliveryMethodDTO>>> GetAllDeliveryMethodsAsync();
 
+        Task<Result<DeliveryQuoteDTO>> GetDeliveryQuoteAsync(
+            int deliveryMethodId,
+            DateTimeOffset? scheduledDeliveryAt
+        );
+
         //Get All OrdersForUser (string Email) => List<OrderToReturnDTO>
         Task<Result<IEnumerable<OrderToReturnDTO>>> GetAllOrdersAsync(string email);
 

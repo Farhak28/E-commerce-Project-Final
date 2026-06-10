@@ -26,13 +26,17 @@ namespace ECommerce.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly INotificationService _notificationService;
         private readonly IPaymentService _paymentService;
+        private readonly IOrderFulfillmentService _fulfillment;
+        private readonly ICouponService _couponService;
 
         public OrderService(
             IMapper mapper,
             IBasketRepository basketRepository,
             IUnitOfWork unitOfWork,
             INotificationService notificationService,
-            IPaymentService paymentService
+            IPaymentService paymentService,
+            IOrderFulfillmentService fulfillment,
+            ICouponService couponService
         )
         {
             _mapper = mapper;
@@ -40,6 +44,8 @@ namespace ECommerce.Services
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
             _paymentService = paymentService;
+            _fulfillment = fulfillment;
+            _couponService = couponService;
         }
 
         public async Task<Result<OrderToReturnDTO>> CreateOrderAsync(
@@ -60,17 +66,21 @@ namespace ECommerce.Services
 
             //3-Creates a list of order items by fetching product details from the database and validating each product.
             List<OrderItem> orderItems = new List<OrderItem>();
+            var productRepo = _unitOfWork.GetRepository<Product, int>();
+            var stockLines = new List<(Product Product, int Quantity)>();
 
             foreach (var item in basket.Items)
             {
-                var product = await _unitOfWork.GetRepository<Product, int>().GetByIdAsync(item.Id);
+                var product = await productRepo.GetByIdAsync(item.Id);
                 if (product is null)
                     return Error.NotFound(
                         "Product.NotFound",
                         $"The product with Id:{item.Id} is Not found"
                     );
+                stockLines.Add((product, item.Quantity));
                 orderItems.Add(CreateOrderItem(item, product));
             }
+
             //4-Retrieves the selected delivery method and validates its existence.
             var deliveryMethod = await _unitOfWork
                 .GetRepository<DeliveryMethod, int>()
@@ -134,14 +144,25 @@ namespace ECommerce.Services
                     );
             }
 
+            var orderRepo = _unitOfWork.GetRepository<Order, Guid>();
+            Order? existingOrder = null;
             if (!string.IsNullOrWhiteSpace(basket.PaymentIntentID))
             {
                 var orderSpec = new OrderWithPaymentIntentSpecifications(basket.PaymentIntentID);
-                var orderRepo = _unitOfWork.GetRepository<Order, Guid>();
-                var existingOrder = await orderRepo.GetByIdAsync(orderSpec);
+                existingOrder = await orderRepo.GetByIdAsync(orderSpec);
                 if (existingOrder is not null)
+                {
+                    if (existingOrder.StockDeducted)
+                        await RestoreStockFromOrderItemsAsync(existingOrder.Items);
                     orderRepo.Delete(existingOrder);
+                }
             }
+
+            await RefreshStockQuantitiesAsync(stockLines);
+
+            var stockValidation = ValidateStockAvailability(stockLines);
+            if (stockValidation is not null)
+                return stockValidation;
 
             DateTimeOffset? scheduledDeliveryAt = null;
             if (orderDTO.ScheduledDeliveryAt.HasValue)
@@ -154,6 +175,29 @@ namespace ECommerce.Services
                 scheduledDeliveryAt = orderDTO.ScheduledDeliveryAt.Value;
             }
 
+            var deliveryPrice = ScheduledDeliveryPricing.Calculate(
+                deliveryMethod.Price,
+                scheduledDeliveryAt
+            );
+
+            var couponCode = !string.IsNullOrWhiteSpace(orderDTO.CouponCode)
+                ? orderDTO.CouponCode
+                : basket.CouponCode;
+
+            decimal discountAmount = 0;
+            if (!string.IsNullOrWhiteSpace(couponCode))
+            {
+                var discountResult = await _couponService.ValidateForOrderAsync(
+                    email,
+                    couponCode,
+                    SubTotal,
+                    deliveryPrice
+                );
+                if (!discountResult.IsSuccess)
+                    return Result<OrderToReturnDTO>.Fail(discountResult.Errors.ToList());
+                discountAmount = discountResult.Value;
+            }
+
             //6-Creates a new Order with all relevant details.
             var order = new Order()
             {
@@ -164,15 +208,41 @@ namespace ECommerce.Services
                 PaymentMethod = orderPaymentMethod,
                 Status = orderStatus,
                 SubTotal = SubTotal,
+                DeliveryPrice = deliveryPrice,
+                CouponCode = couponCode?.Trim().ToUpperInvariant(),
+                DiscountAmount = discountAmount,
                 Items = orderItems,
                 ScheduledDeliveryAt = scheduledDeliveryAt,
             };
 
-            await _unitOfWork.GetRepository<Order, Guid>().AddAsync(order);
+            DeductStock(stockLines);
+            order.StockDeducted = true;
+            await _fulfillment.InitializeNewOrderAsync(order);
+            await orderRepo.AddAsync(order);
 
             bool result = await _unitOfWork.SaveChangesAsync() > 0;
             if (!result)
                 return Error.Faliure("Order.Faliure", "There was a problem while creating the order");
+
+            if (!string.IsNullOrWhiteSpace(couponCode))
+            {
+                var redeem = await _couponService.RedeemAsync(
+                    email,
+                    couponCode,
+                    order.Id,
+                    SubTotal,
+                    deliveryPrice
+                );
+                if (!redeem.IsSuccess)
+                    return Result<OrderToReturnDTO>.Fail(redeem.Errors.ToList());
+                order.UserCouponId = redeem.Value.Id;
+                orderRepo.Update(order);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            basket.CouponCode = null;
+            basket.DiscountAmount = 0;
+            await _basketRepository.CreateOrUpdateBasketAsync(basket);
 
             notificationBody =
                 $"{notificationBody} Order #{order.Id.ToString()[..8]} — track under Account → Orders.";
@@ -209,6 +279,37 @@ namespace ECommerce.Services
                 return Error.NotFound("DeliveryMethods.NotFound", "No Delivery Methods Found");
 
             return Result<IEnumerable<DeliveryMethodDTO>>.Ok(data);
+        }
+
+        public async Task<Result<DeliveryQuoteDTO>> GetDeliveryQuoteAsync(
+            int deliveryMethodId,
+            DateTimeOffset? scheduledDeliveryAt
+        )
+        {
+            if (scheduledDeliveryAt.HasValue)
+            {
+                var scheduleCheck = OrderActionRules.ValidateScheduledDelivery(
+                    scheduledDeliveryAt.Value
+                );
+                if (!scheduleCheck.IsSuccess)
+                    return Result<DeliveryQuoteDTO>.Fail(scheduleCheck.Errors.ToList());
+            }
+
+            var deliveryMethod = await _unitOfWork
+                .GetRepository<DeliveryMethod, int>()
+                .GetByIdAsync(deliveryMethodId);
+            if (deliveryMethod is null)
+                return Error.NotFound(
+                    "DeliveryMethod.NotFound",
+                    $"The Delivery Method with this Id:{deliveryMethodId} is Not Found "
+                );
+
+            return ScheduledDeliveryPricing.BuildQuote(
+                deliveryMethod.Id,
+                deliveryMethod.ShortName,
+                deliveryMethod.Price,
+                scheduledDeliveryAt
+            );
         }
 
         public async Task<Result<IEnumerable<OrderToReturnDTO>>> GetAllOrdersAsync(string email)
@@ -257,6 +358,13 @@ namespace ECommerce.Services
 
             order.Status = OrderStatus.Cancelled;
             order.CancelledAt = DateTimeOffset.UtcNow;
+            _fulfillment.MarkCancelled(order);
+
+            if (order.StockDeducted)
+            {
+                await RestoreStockFromOrderItemsAsync(order.Items);
+                order.StockDeducted = false;
+            }
 
             _unitOfWork.GetRepository<Order, Guid>().Update(order);
             if (await _unitOfWork.SaveChangesAsync() <= 0)
@@ -294,6 +402,7 @@ namespace ECommerce.Services
             order.Status = OrderStatus.ReturnRequested;
             order.ReturnReason = dto.Reason.Trim();
             order.ReturnRequestedAt = DateTimeOffset.UtcNow;
+            _fulfillment.MarkReturnRequested(order);
 
             _unitOfWork.GetRepository<Order, Guid>().Update(order);
             if (await _unitOfWork.SaveChangesAsync() <= 0)
@@ -330,6 +439,10 @@ namespace ECommerce.Services
                 );
 
             order.ScheduledDeliveryAt = dto.ScheduledDeliveryAt;
+            order.DeliveryPrice = ScheduledDeliveryPricing.Calculate(
+                order.DeliveryMethod.Price,
+                dto.ScheduledDeliveryAt
+            );
 
             _unitOfWork.GetRepository<Order, Guid>().Update(order);
             if (await _unitOfWork.SaveChangesAsync() <= 0)
@@ -338,7 +451,7 @@ namespace ECommerce.Services
             await _notificationService.CreateForUserAsync(
                 email,
                 "Delivery scheduled",
-                $"Order #{order.Id.ToString()[..8]} is scheduled for {dto.ScheduledDeliveryAt:MMM d, yyyy h:mm tt}.",
+                $"Order #{order.Id.ToString()[..8]} is scheduled for {dto.ScheduledDeliveryAt:MMM d, yyyy h:mm tt}. Delivery cost updated to ${order.DeliveryPrice:0.00}.",
                 "orders"
             );
 
@@ -364,6 +477,66 @@ namespace ECommerce.Services
                 Price = product.Price,
                 Quantity = item.Quantity,
             };
+        }
+
+        private static Result<OrderToReturnDTO>? ValidateStockAvailability(
+            IReadOnlyList<(Product Product, int Quantity)> lines
+        )
+        {
+            foreach (var (product, quantity) in lines)
+            {
+                if (quantity <= 0)
+                    return Error.Validation(
+                        "Basket.InvalidQuantity",
+                        $"Invalid quantity for {product.Name}."
+                    );
+
+                if (product.StockQuantity < quantity)
+                    return Error.Validation(
+                        "Product.InsufficientStock",
+                        $"Insufficient stock for {product.Name}. Available: {product.StockQuantity}, requested: {quantity}."
+                    );
+            }
+
+            return null;
+        }
+
+        private void DeductStock(IReadOnlyList<(Product Product, int Quantity)> lines)
+        {
+            var productRepo = _unitOfWork.GetRepository<Product, int>();
+            foreach (var (product, quantity) in lines)
+            {
+                product.StockQuantity -= quantity;
+                productRepo.Update(product);
+            }
+        }
+
+        private async Task RestoreStockFromOrderItemsAsync(ICollection<OrderItem> items)
+        {
+            if (items is null || items.Count == 0)
+                return;
+
+            var productRepo = _unitOfWork.GetRepository<Product, int>();
+            foreach (var item in items)
+            {
+                var product = await productRepo.GetByIdAsync(item.Product.ProductId);
+                if (product is null)
+                    continue;
+
+                product.StockQuantity += item.Quantity;
+                productRepo.Update(product);
+            }
+        }
+
+        private async Task RefreshStockQuantitiesAsync(List<(Product Product, int Quantity)> lines)
+        {
+            var productRepo = _unitOfWork.GetRepository<Product, int>();
+            for (var i = 0; i < lines.Count; i++)
+            {
+                var refreshed = await productRepo.GetByIdAsync(lines[i].Product.Id);
+                if (refreshed is not null)
+                    lines[i] = (refreshed, lines[i].Quantity);
+            }
         }
     }
 }

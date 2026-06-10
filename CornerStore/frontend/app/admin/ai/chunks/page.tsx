@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader, AdminPagination, AdminStatCard, AdminTable } from "@/components/admin/admin-ui";
-import { Skeleton } from "@/components/ui";
+import { Card, Skeleton } from "@/components/ui";
 import { getAdminKnowledgeStats } from "@/lib/services/admin-ai";
 import { getKnowledgeChunks } from "@/lib/services/knowledge";
 import type { KnowledgeChunkDTO, KnowledgeStatsDTO } from "@/lib/types";
@@ -11,6 +11,7 @@ export default function AdminChunksPage() {
   const [chunks, setChunks] = useState<KnowledgeChunkDTO[]>([]);
   const [stats, setStats] = useState<KnowledgeStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 20;
@@ -25,8 +26,10 @@ export default function AdminChunksPage() {
       setChunks(chunkData.items);
       setTotalCount(chunkData.totalCount);
       setStats(statsData);
-    } catch {
+      setError(null);
+    } catch (err) {
       setChunks([]);
+      setError(err instanceof Error ? err.message : "Failed to load chunks");
     } finally {
       setLoading(false);
     }
@@ -44,9 +47,15 @@ export default function AdminChunksPage() {
         <AdminStatCard label="Total chunks" value={stats?.chunkCount ?? "—"} />
         <AdminStatCard label="Last updated" value={stats?.lastUpdatedAt ? new Date(stats.lastUpdatedAt).toLocaleDateString() : "—"} />
       </div>
+      {error ? (
+        <Card className="border-accent/40 bg-accent/5">
+          <p className="text-sm font-semibold text-accent">Could not load chunks</p>
+          <p className="mt-1 text-sm text-text-muted">{error}</p>
+        </Card>
+      ) : null}
       {loading ? (
         <Skeleton className="h-48 w-full rounded-2xl" />
-      ) : (
+      ) : !error ? (
         <>
           <AdminTable
             columns={["Document", "Index", "Preview", "Embedded", "Created"]}
@@ -60,7 +69,7 @@ export default function AdminChunksPage() {
           />
           <AdminPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

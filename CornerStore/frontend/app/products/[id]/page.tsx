@@ -7,6 +7,7 @@ import { ProductGallery } from "@/components/product-gallery";
 import { ProductAiInsights } from "@/components/product-ai-insights";
 import { RecommendedProducts } from "@/components/recommended-products";
 import { Badge } from "@/components/ui";
+import { BrandOfficialLink } from "@/components/brand-official-link";
 import { getProductByIdServer } from "@/lib/services/products";
 import { mapProductDTO } from "@/lib/utils/product";
 import { notFound } from "next/navigation";
@@ -36,11 +37,19 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="primary">{product.productBrand}</Badge>
             <Badge tone="default">{product.productType}</Badge>
-            {product.rating ? (
-              <Badge tone="success">{product.rating.toFixed(1)} ★ ({product.reviewCount ?? 0})</Badge>
-            ) : null}
+            {product.reviewCount && product.reviewCount > 0 ? (
+              <Badge tone="success">{product.rating?.toFixed(1)} ★ ({product.reviewCount})</Badge>
+            ) : (
+              <Badge tone="default">Be the first to review</Badge>
+            )}
           </div>
           <h1 className="section-title mt-4 text-3xl font-bold md:text-4xl">{product.name}</h1>
+          <div className="mt-3">
+            <BrandOfficialLink
+              brandName={product.productBrand}
+              officialUrl={product.brandOfficialUrl}
+            />
+          </div>
           <p className="mt-4 text-sm leading-relaxed text-text-muted">{product.description}</p>
           <div className="mt-6 flex flex-wrap items-end gap-4 border-b border-border pb-6">
             <p className="text-4xl font-bold text-primary">${product.price}</p>
@@ -58,7 +67,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
       <ProductAiInsights product={product} />
       <ProductDetailsTabs productId={product.id} />
 
-      <RecommendedProducts title="Customers also bought" productId={product.id} mode="similar" excludedIds={[product.id]} />
+      <RecommendedProducts title="Customers also bought" productId={product.id} mode="bought-together" excludedIds={[product.id]} />
       <RecommendedProducts title="Similar products" productId={product.id} mode="similar-price" excludedIds={[product.id]} />
       <RecommendedProducts title="Frequently bought together" productId={product.id} mode="cart" cartProductIds={[product.id]} excludedIds={[product.id]} />
     </div>

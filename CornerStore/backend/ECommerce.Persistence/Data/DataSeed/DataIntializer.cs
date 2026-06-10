@@ -39,7 +39,10 @@ namespace ECommerce.Persistence.Data.DataSeed
                 var hasDeliveryMethods = await _dbContext.Set<DeliveryMethod>().AnyAsync();
 
                 if (hasProduct && hasBrands && hasTypes && hasDeliveryMethods)
+                {
+                    await BackfillBrandOfficialUrlsAsync();
                     return;
+                }
 
                 if (!hasBrands)
                 {
@@ -66,6 +69,7 @@ namespace ECommerce.Persistence.Data.DataSeed
                     );
 
                 await _dbContext.SaveChangesAsync();
+                await BackfillBrandOfficialUrlsAsync();
             }
             catch (Exception ex)
             {
@@ -131,6 +135,41 @@ namespace ECommerce.Persistence.Data.DataSeed
             };
 
             await _dbContext.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        private async Task BackfillBrandOfficialUrlsAsync()
+        {
+            var filePath = ResolveSeedJsonPath("brands.json");
+            if (!File.Exists(filePath))
+                return;
+
+            await using var dataStream = File.OpenRead(filePath);
+            var seedBrands = await JsonSerializer.DeserializeAsync<List<ProductBrand>>(
+                dataStream,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+            if (seedBrands is null || seedBrands.Count == 0)
+                return;
+
+            var urlByName = seedBrands
+                .Where(b => !string.IsNullOrWhiteSpace(b.OfficialWebsiteUrl))
+                .ToDictionary(b => b.Name, b => b.OfficialWebsiteUrl!, StringComparer.OrdinalIgnoreCase);
+
+            var brands = await _dbContext.ProductBrands.ToListAsync();
+            var changed = false;
+            foreach (var brand in brands)
+            {
+                if (!string.IsNullOrWhiteSpace(brand.OfficialWebsiteUrl))
+                    continue;
+                if (urlByName.TryGetValue(brand.Name, out var url))
+                {
+                    brand.OfficialWebsiteUrl = url;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                await _dbContext.SaveChangesAsync();
         }
 
         private async Task SeedDataFromJson<T, TKey>(string fileName, DbSet<T> dbset)

@@ -21,18 +21,21 @@ public class PaymentService : IPaymentService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
     private readonly IMapper _mapper;
+    private readonly IOrderFulfillmentService _fulfillment;
 
     public PaymentService(
         IBasketRepository basketRepository,
         IUnitOfWork unitOfWork,
         IConfiguration configuration,
-        IMapper mapper
+        IMapper mapper,
+        IOrderFulfillmentService fulfillment
     )
     {
         _basketRepository = basketRepository;
         _unitOfWork = unitOfWork;
         _configuration = configuration;
         _mapper = mapper;
+        _fulfillment = fulfillment;
     }
 
     private string? GetStripeSecretKey()
@@ -94,7 +97,10 @@ public class PaymentService : IPaymentService
         if (method is null)
             return Error.NotFound("Delivery method not found");
 
-        basket.ShippingPrice = method.Price;
+        basket.ShippingPrice = ScheduledDeliveryPricing.Calculate(
+            method.Price,
+            basket.ScheduledDeliveryAt
+        );
 
         foreach (var item in basket.Items)
         {
@@ -108,9 +114,9 @@ public class PaymentService : IPaymentService
             item.PictureUrl = product.PictureUrl;
         }
 
-        long amount = (long)(
-            (basket.Items.Sum(I => I.Quantity * I.Price) + basket.ShippingPrice) * 100
-        );
+        var orderTotal = basket.Items.Sum(I => I.Quantity * I.Price) + basket.ShippingPrice - basket.DiscountAmount;
+        orderTotal = Math.Max(0, orderTotal);
+        long amount = (long)(orderTotal * 100);
 
         if (amount < MinAmountCents)
             return Error.Validation(
@@ -254,6 +260,7 @@ public class PaymentService : IPaymentService
         if (stripeEvent.Type == EventTypes.PaymentIntentSucceeded)
         {
             order.Status = OrderStatus.PaymentReceived;
+            await _fulfillment.ConfirmPaymentAsync(order);
 
             _unitOfWork.GetRepository<Order, Guid>().Update(order);
 

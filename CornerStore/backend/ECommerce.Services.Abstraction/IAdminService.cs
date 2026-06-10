@@ -8,6 +8,7 @@ public interface IAdminService
 {
     Task<Result<AdminStatsDTO>> GetDashboardStatsAsync();
     Task<Result<AdminAnalyticsDTO>> GetAnalyticsAsync();
+    Task<Result<AdminCouponsSummaryDTO>> GetCouponsSummaryAsync();
     Task<Result<AdminReportsDTO>> GetReportsAsync();
     Task<Result<AdminPagedResult<OrderToReturnDTO>>> GetOrdersPagedAsync(AdminOrderQueryParams queryParams);
     Task<Result<OrderToReturnDTO>> GetOrderByIdAsync(Guid id);

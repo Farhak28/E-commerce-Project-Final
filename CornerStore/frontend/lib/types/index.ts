@@ -8,6 +8,7 @@ export type ProductDTO = {
   price: number;
   productType: string;
   productBrand: string;
+  brandOfficialUrl?: string | null;
   averageRating?: number;
   reviewCount?: number;
   stockQuantity?: number;
@@ -16,6 +17,7 @@ export type ProductDTO = {
 export type BrandDTO = {
   id: number;
   name: string;
+  officialWebsiteUrl?: string | null;
 };
 
 export type TypeDTO = {
@@ -107,9 +109,40 @@ export type BasketDTO = {
   id: string;
   deliveryMethodId: number | null;
   shippingPrice: number;
+  scheduledDeliveryAt?: string | null;
+  couponCode?: string | null;
+  discountAmount?: number;
   paymentIntentID: string | null;
   clientSecret: string | null;
   items: BasketItemDTO[];
+};
+
+export type UserCouponDTO = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  discountType: string;
+  discountValue: number;
+  maxDiscount?: number | null;
+  minOrderAmount: number;
+  isUsed: boolean;
+  expiresAt: string;
+  discountLabel: string;
+};
+
+export type DeliveryQuoteLineDTO = {
+  label: string;
+  amount: number;
+};
+
+export type DeliveryQuoteDTO = {
+  deliveryMethodId: number;
+  deliveryMethodName: string;
+  basePrice: number;
+  totalPrice: number;
+  scheduledDeliveryAt?: string | null;
+  lines: DeliveryQuoteLineDTO[];
 };
 
 export type DeliveryMethodDTO = {
@@ -126,6 +159,7 @@ export type OrderDTO = {
   shipToAddress: AddressDTO;
   paymentMethod?: number;
   scheduledDeliveryAt?: string;
+  couponCode?: string;
 };
 
 export type OrderItemDTO = {
@@ -141,11 +175,20 @@ export type OrderToReturnDTO = {
   items: OrderItemDTO[];
   address: AddressDTO;
   deliveryMethod: string;
+  deliveryMethodId?: number;
   paymentIntentId: string;
   paymentMethod?: string;
   status: string;
+  fulfillmentStage?: string;
+  trackingNumber?: string | null;
+  carrierName?: string;
+  progressPercent?: number;
+  trackingHeadline?: string;
   orderDate: string;
   subtotal: number;
+  deliveryPrice?: number;
+  couponCode?: string | null;
+  discountAmount?: number;
   total: number;
   scheduledDeliveryAt?: string | null;
   cancelledAt?: string | null;
@@ -154,6 +197,29 @@ export type OrderToReturnDTO = {
   canCancel?: boolean;
   canReturn?: boolean;
   canSchedule?: boolean;
+};
+
+export type OrderTrackingStepDTO = {
+  stage: string;
+  title: string;
+  description: string;
+  location?: string | null;
+  occurredAt?: string | null;
+  isComplete: boolean;
+  isCurrent: boolean;
+};
+
+export type OrderTrackingDTO = {
+  orderId: string;
+  status: string;
+  fulfillmentStage: string;
+  trackingNumber?: string | null;
+  carrierName: string;
+  progressPercent: number;
+  headline: string;
+  subheadline: string;
+  estimatedDeliveryAt?: string | null;
+  steps: OrderTrackingStepDTO[];
 };
 
 export type WishlistDTO = {
@@ -177,6 +243,27 @@ export type AdminStatsDTO = {
   productsCount: number;
   pendingOrdersCount: number;
   lowStockCount: number;
+  activeShipmentsCount: number;
+  deliveredOrdersCount: number;
+  scheduledDeliveriesCount: number;
+  activeCouponsCount: number;
+  redeemedCouponsCount: number;
+  totalDiscountsGiven: number;
+  reviewsCount: number;
+  brandsWithOfficialUrlCount: number;
+};
+
+export type FulfillmentByStageDTO = {
+  stage: string;
+  count: number;
+};
+
+export type AdminCouponsSummaryDTO = {
+  activeCoupons: number;
+  redeemedCoupons: number;
+  expiredCoupons: number;
+  totalDiscountsGiven: number;
+  couponsByReward: { rewardKey: string; active: number; redeemed: number }[];
 };
 
 export type RevenueByMonthDTO = {
@@ -192,7 +279,12 @@ export type OrdersByStatusDTO = {
 export type AdminAnalyticsDTO = {
   revenueByMonth: RevenueByMonthDTO[];
   ordersByStatus: OrdersByStatusDTO[];
+  fulfillmentByStage: FulfillmentByStageDTO[];
   assistantUsageEstimate: number;
+  scheduledDeliveriesCount: number;
+  totalDeliveryRevenue: number;
+  totalDiscountsGiven: number;
+  visualSearchEventsCount: number;
 };
 
 export type NotificationDTO = {
@@ -210,6 +302,7 @@ export type AccountDashboardDTO = {
   rewardPoints: number;
   loyaltyTier: string;
   profileCompletionPercent: number;
+  availableCoupons: number;
   topInterests: string[];
   savedPreferences: string[];
   lastViewedSummary: string | null;
@@ -450,6 +543,7 @@ export type Product = {
   price: number;
   productType: string;
   productBrand: string;
+  brandOfficialUrl?: string | null;
   rating?: number;
   reviewCount?: number;
   stock?: number;

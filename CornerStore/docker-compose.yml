@@ -55,6 +55,9 @@ services:
       AI__ModelName: "${AI__ModelName:-gemini-2.5-flash}"
       AI__EnableStartupIndexing: "${AI__EnableStartupIndexing:-false}"
       DataSeed__ReloadFromJsonOnStartup: "false"
+      OrderFulfillment__DemoAutoAdvance: "true"
+      OrderFulfillment__StageIntervalMinutes: "2"
+      OrderFulfillment__WorkerIntervalSeconds: "45"
       URLs__BaseUrl: "http://localhost:5141/"
     volumes:
       - cornerstore-product-images:/app/wwwroot/images/products

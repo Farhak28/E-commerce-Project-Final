@@ -9,6 +9,12 @@ namespace ECommerce.Services;
 
 public class RecommendationService : IRecommendationService
 {
+    private static readonly HashSet<OrderStatus> ExcludedOrderStatuses =
+    [
+        OrderStatus.Cancelled,
+        OrderStatus.PaymentFailed,
+    ];
+
     private static readonly Dictionary<string, string[]> CategoryAliases = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Smartphones"] = ["smartphones", "smartphone", "phone", "phones", "mobile", "iphone", "android"],
@@ -36,16 +42,39 @@ public class RecommendationService : IRecommendationService
 
     public async Task<IEnumerable<ProductDTO>> GetTrendingAsync(int count = 8)
     {
-        var all = await _productService.GetAllProductsForAdminAsync();
-        return all
-            .OrderByDescending(p => p.ReviewCount > 0 ? p.AverageRating : 0)
-            .ThenByDescending(p => p.ReviewCount)
-            .ThenByDescending(p => p.Id)
-            .Take(count);
+        var lines = await LoadOrderLinesAsync();
+        if (lines.Count > 0)
+        {
+            var purchased = await ResolveProductsByPurchaseVolumeAsync(lines, count, []);
+            if (purchased.Count > 0)
+                return purchased;
+        }
+
+        return await GetReviewTrendingAsync(count);
     }
 
-    public Task<IEnumerable<ProductDTO>> GetSimilarAsync(int productId, int count = 5) =>
-        _productService.GetRecommendedProductsAsync(productId, count);
+    public async Task<IEnumerable<ProductDTO>> GetSimilarAsync(int productId, int count = 5)
+    {
+        var coPurchased = await GetCoPurchasedProductsAsync([productId], [productId], count);
+        if (coPurchased.Count >= count)
+            return coPurchased.Take(count);
+
+        var suggestions = coPurchased.ToList();
+        var seen = new HashSet<int>(suggestions.Select(p => p.Id)) { productId };
+
+        foreach (var item in await _productService.GetRecommendedProductsAsync(productId, count + 2))
+        {
+            if (seen.Add(item.Id))
+                suggestions.Add(item);
+            if (suggestions.Count >= count)
+                break;
+        }
+
+        return suggestions.Take(count);
+    }
+
+    public async Task<IEnumerable<ProductDTO>> GetBoughtTogetherAsync(int productId, int count = 6) =>
+        await GetCoPurchasedProductsAsync([productId], [productId], count);
 
     public async Task<IEnumerable<ProductDTO>> GetPersonalizedAsync(
         string? userEmail,
@@ -57,8 +86,41 @@ public class RecommendationService : IRecommendationService
         var suggestions = new List<ProductDTO>();
         var seen = new HashSet<int>();
 
+        if (!string.IsNullOrWhiteSpace(userEmail))
+        {
+            var userLines = (await LoadOrderLinesAsync(userEmail)).ToList();
+            var boughtIds = userLines
+                .Select(l => l.ProductId)
+                .Distinct()
+                .ToList();
+
+            foreach (var productId in boughtIds.OrderByDescending(id =>
+                    userLines.Where(l => l.ProductId == id).Sum(l => l.Quantity))
+                .Take(3))
+            {
+                await TryAddProductByIdAsync(productId, suggestions, seen);
+            }
+
+            if (boughtIds.Count > 0)
+            {
+                var coPurchased = await GetCoPurchasedProductsAsync(
+                    boughtIds,
+                    boughtIds.Concat(seen).ToHashSet(),
+                    count
+                );
+                foreach (var product in coPurchased)
+                {
+                    if (seen.Add(product.Id))
+                        suggestions.Add(product);
+                }
+            }
+
+            foreach (var productId in boughtIds.Take(4))
+                await AddSimilarForProductAsync(productId, suggestions, seen, 2);
+        }
+
         foreach (var id in (cartProductIds ?? []).Distinct().Take(4))
-            await AddSimilarForProductAsync(id, suggestions, seen, 3);
+            await AddSimilarForProductAsync(id, suggestions, seen, 2);
 
         foreach (var id in (recentlyViewedIds ?? []).Distinct().Take(4))
             await AddSimilarForProductAsync(id, suggestions, seen, 2);
@@ -69,41 +131,29 @@ public class RecommendationService : IRecommendationService
             {
                 var wishlist = await _wishlistService.GetWishlistAsync(userEmail);
                 foreach (var productId in wishlist.ProductIds.Take(3))
-                    await AddSimilarForProductAsync(productId, suggestions, seen, 3);
+                    await AddSimilarForProductAsync(productId, suggestions, seen, 2);
             }
             catch
             {
                 // optional
             }
+        }
 
-            var spec = new OrderSpecification();
-            var orders = (await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(spec))
-                .Where(o => o.UserEmail.Equals(userEmail, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(o => o.OrderDate)
-                .Take(5);
-
-            foreach (var order in orders)
+        if (suggestions.Count < count)
+        {
+            var lines = await LoadOrderLinesAsync();
+            foreach (var product in await ResolveProductsByPurchaseVolumeAsync(lines, count, seen))
             {
-                foreach (var item in order.Items.Take(2))
-                {
-                    var search = item.Product?.ProductName;
-                    if (string.IsNullOrWhiteSpace(search))
-                        continue;
-                    var page = await _productService.GetAllProductsAsync(
-                        new ProductQueryParams { search = search, PageIndex = 1, PageSize = 10 }
-                    );
-                    foreach (var product in page.Data)
-                    {
-                        if (seen.Add(product.Id))
-                            suggestions.Add(product);
-                    }
-                }
+                if (seen.Add(product.Id))
+                    suggestions.Add(product);
+                if (suggestions.Count >= count)
+                    break;
             }
         }
 
         if (suggestions.Count < count)
         {
-            foreach (var item in await GetTrendingAsync(count))
+            foreach (var item in await GetReviewTrendingAsync(count))
             {
                 if (seen.Add(item.Id))
                     suggestions.Add(item);
@@ -120,28 +170,45 @@ public class RecommendationService : IRecommendationService
         int count = 8
     )
     {
-        var suggestions = new List<ProductDTO>();
-        var seen = new HashSet<int>(productIds);
+        var anchors = productIds.Distinct().Where(id => id > 0).ToList();
+        if (anchors.Count == 0)
+            return await GetTrendingAsync(count);
 
-        foreach (var id in productIds.Distinct().Take(5))
-            await AddSimilarForProductAsync(id, suggestions, seen, 4);
+        var suggestions = await GetCoPurchasedProductsAsync(anchors, anchors, count);
+        if (suggestions.Count >= count)
+            return suggestions.Take(count);
 
-        if (suggestions.Count < count)
+        var list = suggestions.ToList();
+        var seen = new HashSet<int>(list.Select(p => p.Id).Concat(anchors));
+
+        foreach (var id in anchors.Take(5))
+            await AddSimilarForProductAsync(id, list, seen, 4);
+
+        if (list.Count < count)
         {
             foreach (var item in await GetTrendingAsync(count))
             {
                 if (seen.Add(item.Id))
-                    suggestions.Add(item);
-                if (suggestions.Count >= count)
+                    list.Add(item);
+                if (list.Count >= count)
                     break;
             }
         }
 
-        return suggestions.Take(count);
+        return list.Take(count);
     }
 
     public async Task<IEnumerable<ProductDTO>> GetByBudgetAsync(decimal maxPrice, int count = 8)
     {
+        var lines = await LoadOrderLinesAsync();
+        if (lines.Count > 0)
+        {
+            var purchased = await ResolveProductsByPurchaseVolumeAsync(lines, count * 3, []);
+            var filtered = purchased.Where(p => p.Price <= maxPrice).Take(count).ToList();
+            if (filtered.Count > 0)
+                return filtered;
+        }
+
         var all = await _productService.GetAllProductsForAdminAsync();
         return all
             .Where(p => p.Price <= maxPrice)
@@ -163,7 +230,26 @@ public class RecommendationService : IRecommendationService
                 || p.ProductBrand.Contains(category, StringComparison.OrdinalIgnoreCase)
                 || p.Description.Contains(category, StringComparison.OrdinalIgnoreCase));
 
-        return filtered
+        var inCategory = filtered.ToList();
+        if (inCategory.Count == 0)
+            return [];
+
+        var lines = await LoadOrderLinesAsync();
+        var categoryIds = inCategory.Select(p => p.Id).ToHashSet();
+        var purchaseRank = lines
+            .Where(l => categoryIds.Contains(l.ProductId))
+            .GroupBy(l => l.ProductId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+
+        if (purchaseRank.Count > 0)
+        {
+            return inCategory
+                .OrderByDescending(p => purchaseRank.GetValueOrDefault(p.Id))
+                .ThenByDescending(p => p.ReviewCount > 0 ? p.AverageRating : 0)
+                .Take(count);
+        }
+
+        return inCategory
             .OrderByDescending(p => p.ReviewCount > 0 ? p.AverageRating : 0)
             .ThenByDescending(p => p.ReviewCount)
             .Take(count);
@@ -184,6 +270,116 @@ public class RecommendationService : IRecommendationService
             .Where(p => p.Id != anchorProductId)
             .OrderBy(p => Math.Abs(p.Price - anchorPrice))
             .ThenByDescending(p => p.AverageRating)
+            .Take(count);
+    }
+
+    private async Task<List<OrderLine>> LoadOrderLinesAsync(string? userEmail = null)
+    {
+        var spec = string.IsNullOrWhiteSpace(userEmail)
+            ? new OrderSpecification()
+            : new OrderSpecification(userEmail);
+
+        var orders = await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(spec);
+
+        return orders
+            .Where(o => !ExcludedOrderStatuses.Contains(o.Status))
+            .SelectMany(o =>
+                o.Items.Select(i => new OrderLine(o.Id, i.Product.ProductId, i.Quantity))
+            )
+            .Where(l => l.ProductId > 0)
+            .ToList();
+    }
+
+    private async Task<List<ProductDTO>> GetCoPurchasedProductsAsync(
+        IReadOnlyList<int> anchorProductIds,
+        IEnumerable<int> excludeIds,
+        int count
+    )
+    {
+        if (anchorProductIds.Count == 0 || count <= 0)
+            return [];
+
+        var exclude = excludeIds.ToHashSet();
+        var lines = await LoadOrderLinesAsync();
+        if (lines.Count == 0)
+            return [];
+
+        var anchorSet = anchorProductIds.ToHashSet();
+        var orderIdsWithAnchor = lines
+            .Where(l => anchorSet.Contains(l.ProductId))
+            .Select(l => l.OrderId)
+            .ToHashSet();
+
+        if (orderIdsWithAnchor.Count == 0)
+            return [];
+
+        var scores = lines
+            .Where(l => orderIdsWithAnchor.Contains(l.OrderId))
+            .Where(l => !exclude.Contains(l.ProductId))
+            .Where(l => !anchorSet.Contains(l.ProductId))
+            .GroupBy(l => l.ProductId)
+            .Select(g => new { ProductId = g.Key, Score = g.Sum(x => x.Quantity) })
+            .OrderByDescending(x => x.Score)
+            .Take(count)
+            .ToList();
+
+        return await ResolveProductsByIdsAsync(scores.Select(s => s.ProductId).ToList());
+    }
+
+    private async Task<List<ProductDTO>> ResolveProductsByPurchaseVolumeAsync(
+        IReadOnlyList<OrderLine> lines,
+        int count,
+        HashSet<int> exclude
+    )
+    {
+        var rankedIds = lines
+            .Where(l => !exclude.Contains(l.ProductId))
+            .GroupBy(l => l.ProductId)
+            .Select(g => new { ProductId = g.Key, TotalQty = g.Sum(x => x.Quantity) })
+            .OrderByDescending(x => x.TotalQty)
+            .Take(count)
+            .Select(x => x.ProductId)
+            .ToList();
+
+        return await ResolveProductsByIdsAsync(rankedIds);
+    }
+
+    private async Task<List<ProductDTO>> ResolveProductsByIdsAsync(IReadOnlyList<int> productIds)
+    {
+        var products = new List<ProductDTO>();
+        foreach (var id in productIds)
+        {
+            var result = await _productService.GetProductByIdAsync(id);
+            if (result.IsSuccess)
+                products.Add(result.Value);
+        }
+
+        return products;
+    }
+
+    private async Task TryAddProductByIdAsync(
+        int productId,
+        List<ProductDTO> suggestions,
+        HashSet<int> seen
+    )
+    {
+        if (!seen.Add(productId))
+            return;
+
+        var result = await _productService.GetProductByIdAsync(productId);
+        if (result.IsSuccess)
+            suggestions.Add(result.Value);
+        else
+            seen.Remove(productId);
+    }
+
+    private async Task<IEnumerable<ProductDTO>> GetReviewTrendingAsync(int count)
+    {
+        var all = await _productService.GetAllProductsForAdminAsync();
+        return all
+            .OrderByDescending(p => p.ReviewCount > 0 ? p.AverageRating : 0)
+            .ThenByDescending(p => p.ReviewCount)
+            .ThenByDescending(p => p.Id)
             .Take(count);
     }
 
@@ -236,4 +432,6 @@ public class RecommendationService : IRecommendationService
                 suggestions.Add(item);
         }
     }
+
+    private sealed record OrderLine(Guid OrderId, int ProductId, int Quantity);
 }

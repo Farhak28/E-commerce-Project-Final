@@ -10,6 +10,9 @@ namespace ECommerce.Services.Specifications.OrderSpecifications
     internal class OrderWithPaymentIntentSpecifications : BaseSpecifications<Order, Guid>
     {
         public OrderWithPaymentIntentSpecifications(string paymentIntentId)
-            : base(O => O.PaymentIntentId == paymentIntentId) { }
+            : base(O => O.PaymentIntentId == paymentIntentId)
+        {
+            AddInclude(O => O.Items);
+        }
     }
 }

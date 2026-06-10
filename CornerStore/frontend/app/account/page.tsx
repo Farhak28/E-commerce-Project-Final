@@ -138,6 +138,18 @@ export default function AccountPage() {
           </Link>
         </Card>
         <Card>
+          <h2 className="section-title text-xl font-semibold">My coupons</h2>
+          <p className="mt-2 text-sm text-text-muted">
+            Personalized discounts earned from your order history and spend.
+          </p>
+          <p className="mt-3 inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-800 dark:text-emerald-200">
+            {dashboard?.availableCoupons ?? 0} available
+          </p>
+          <Link href="/account/coupons" className="mt-3 inline-flex text-sm font-semibold text-primary">
+            View coupons
+          </Link>
+        </Card>
+        <Card>
           <h2 className="section-title text-xl font-semibold">Wishlist</h2>
           <p className="mt-2 text-sm text-text-muted">Saved favorites with stock alerts and promo updates.</p>
           <Link href="/wishlist" className="mt-3 inline-flex text-sm font-semibold text-primary">

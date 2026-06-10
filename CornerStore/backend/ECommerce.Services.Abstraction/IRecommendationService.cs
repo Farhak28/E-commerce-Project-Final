@@ -8,6 +8,8 @@ public interface IRecommendationService
 
     Task<IEnumerable<ProductDTO>> GetSimilarAsync(int productId, int count = 5);
 
+    Task<IEnumerable<ProductDTO>> GetBoughtTogetherAsync(int productId, int count = 6);
+
     Task<IEnumerable<ProductDTO>> GetPersonalizedAsync(
         string? userEmail,
         int count = 8,

@@ -56,6 +56,14 @@ namespace ECommerce.API.Extensions
             return app;
         }
 
+        public static async Task<WebApplication> ReconcileInventoryStockAsync(this WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var inventoryStock = scope.ServiceProvider.GetRequiredService<IInventoryStockService>();
+            await inventoryStock.ReconcileHistoricalOrdersAsync();
+            return app;
+        }
+
         public static async Task<WebApplication> SeedIdentityDataAsync(this WebApplication app)
         {
             using var scope = app.Services.CreateScope();

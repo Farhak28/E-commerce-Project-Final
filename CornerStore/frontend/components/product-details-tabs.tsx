@@ -1,45 +1,62 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui";
+import { StarRating } from "@/components/star-rating";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { getProductReviews, addProductReview } from "@/lib/services/reviews";
 import { getSentimentBadge, getSentimentScore } from "@/lib/utils/sentiment";
 
 type ReviewRow = {
+  id?: number;
   user: string;
   rating: number;
   comment: string;
+  createdAt?: string;
 };
 
 export function ProductDetailsTabs({ productId }: { productId: number }) {
   const [tab, setTab] = useState<"specs" | "reviews" | "checkout">("specs");
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
-  const [newReview, setNewReview] = useState<ReviewRow>({ user: "Guest", rating: 5, comment: "" });
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [feedback, setFeedback] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { addToCart } = useCart();
   const { isSignedIn, session } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
+  const loadReviews = useCallback(() => {
     setLoadingReviews(true);
     void getProductReviews(productId)
       .then((data) =>
         setReviews(
           data.map((r) => ({
+            id: r.id,
             user: r.userName,
             rating: r.rating,
             comment: r.comment,
+            createdAt: r.createdAt,
           })),
         ),
       )
       .catch(() => setReviews([]))
       .finally(() => setLoadingReviews(false));
   }, [productId]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
+
+  useEffect(() => {
+    const openReviews = () => setTab("reviews");
+    window.addEventListener("product:open-reviews-tab", openReviews);
+    return () => window.removeEventListener("product:open-reviews-tab", openReviews);
+  }, []);
 
   const averageRating = useMemo(
     () => (reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0),
@@ -68,30 +85,45 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!newReview.comment.trim()) {
-      setFeedback("Write a short comment before submitting.");
+    if (!isSignedIn) {
+      setFeedback({ type: "err", text: "Sign in to leave a review." });
       return;
     }
+    if (!comment.trim()) {
+      setFeedback({ type: "err", text: "Write a short comment before submitting." });
+      return;
+    }
+    if (comment.trim().length > 2000) {
+      setFeedback({ type: "err", text: "Comment must be 2000 characters or less." });
+      return;
+    }
+
     setSubmitting(true);
     setFeedback(null);
     try {
       const created = await addProductReview(productId, {
-        rating: newReview.rating,
-        comment: newReview.comment.trim(),
-        userName: session?.displayName ?? "Guest",
+        rating,
+        comment: comment.trim(),
+        userName: session?.displayName,
       });
       setReviews((current) => [
         {
+          id: created.id,
           user: created.userName,
           rating: created.rating,
           comment: created.comment,
+          createdAt: created.createdAt,
         },
         ...current,
       ]);
-      setNewReview({ user: session?.displayName ?? "Guest", rating: 5, comment: "" });
-      setFeedback("Review submitted. Thank you!");
-    } catch {
-      setFeedback("Could not submit review. Sign in or try again later.");
+      setComment("");
+      setRating(5);
+      setFeedback({ type: "ok", text: "Review submitted. Thank you!" });
+      router.refresh();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not submit review. Try again later.";
+      setFeedback({ type: "err", text: message });
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +134,7 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
       <div className="flex gap-2">
         {[
           { id: "specs", label: "Overview" },
-          { id: "reviews", label: "Reviews" },
+          { id: "reviews", label: `Reviews (${reviews.length})` },
           { id: "checkout", label: "Checkout" },
         ].map((item) => (
           <button
@@ -125,7 +157,10 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-surface-2 p-4 text-sm">
               <p className="font-semibold">Average rating</p>
-              <p className="mt-2 text-2xl font-bold">{averageRating.toFixed(1)} ★</p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-2xl font-bold">{averageRating.toFixed(1)}</span>
+                <StarRating value={averageRating} readOnly size="sm" />
+              </div>
             </div>
             <div className="rounded-2xl bg-surface-2 p-4 text-sm">
               <p className="font-semibold">Review count</p>
@@ -143,12 +178,24 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
       ) : null}
 
       {tab === "reviews" ? (
-        <div className="animate-rise rounded-2xl border border-border bg-surface p-4">
+        <div
+          id="product-reviews"
+          className="animate-rise scroll-mt-24 rounded-2xl border border-border bg-surface p-4"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="section-title text-xl font-semibold">Ratings &amp; reviews</h2>
-              <p className="mt-1 text-xs text-text-muted">Keyword-based sentiment (positive / neutral / negative)</p>
+              <p className="mt-1 text-xs text-text-muted">
+                Share your experience — star rating and written comment
+              </p>
             </div>
+            {reviews.length > 0 ? (
+              <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
+                <span className="text-2xl font-bold">{averageRating.toFixed(1)}</span>
+                <StarRating value={averageRating} readOnly size="sm" />
+                <span className="text-xs text-text-muted">({reviews.length})</span>
+              </div>
+            ) : null}
           </div>
 
           {loadingReviews ? (
@@ -159,6 +206,7 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
                 <div className="rounded-2xl bg-surface-2 p-4 text-sm">
                   <p className="font-semibold">Average</p>
                   <p className="mt-2 text-3xl font-bold">{averageRating.toFixed(1)}</p>
+                  <StarRating value={averageRating} readOnly size="sm" />
                 </div>
                 <div className="rounded-2xl bg-surface-2 p-4 text-sm">
                   <p className="font-semibold text-secondary">Positive</p>
@@ -178,30 +226,49 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
                 <form className="rounded-2xl bg-surface-2 p-4" onSubmit={handleSubmit}>
                   <h3 className="font-semibold">Write a review</h3>
                   {!isSignedIn ? (
-                    <p className="mt-2 text-xs text-text-muted">Sign in for best results; guest name is used otherwise.</p>
-                  ) : null}
+                    <p className="mt-2 text-sm text-text-muted">
+                      <Link href="/login" className="font-semibold text-primary hover:underline">
+                        Sign in
+                      </Link>{" "}
+                      to rate and review this product.
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-text-muted">
+                      Posting as {session?.displayName ?? "you"}
+                    </p>
+                  )}
                   <div className="mt-3 space-y-3">
-                    <label className="block text-sm font-medium">Rating</label>
-                    <select
-                      value={newReview.rating}
-                      onChange={(e) => setNewReview({ ...newReview, rating: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
-                    >
-                      {[5, 4, 3, 2, 1].map((rating) => (
-                        <option key={rating} value={rating}>
-                          {rating} stars
-                        </option>
-                      ))}
-                    </select>
-                    <label className="block text-sm font-medium">Comment</label>
-                    <textarea
-                      value={newReview.comment}
-                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                      className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
-                      rows={4}
-                    />
-                    {feedback ? <p className="text-sm text-text-muted">{feedback}</p> : null}
-                    <Button type="submit" className="w-full" disabled={submitting}>
+                    <div>
+                      <label className="block text-sm font-medium">Your rating</label>
+                      <div className="mt-2 flex items-center gap-2">
+                        <StarRating value={rating} onChange={setRating} />
+                        <span className="text-sm text-text-muted">{rating} / 5</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="review-comment" className="block text-sm font-medium">
+                        Comment
+                      </label>
+                      <textarea
+                        id="review-comment"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+                        rows={4}
+                        placeholder="What did you like or dislike?"
+                        maxLength={2000}
+                        disabled={!isSignedIn}
+                      />
+                      <p className="mt-1 text-right text-[10px] text-text-muted">{comment.length}/2000</p>
+                    </div>
+                    {feedback ? (
+                      <p
+                        className={`text-sm ${feedback.type === "ok" ? "text-emerald-600" : "text-red-500"}`}
+                      >
+                        {feedback.text}
+                      </p>
+                    ) : null}
+                    <Button type="submit" className="w-full" disabled={submitting || !isSignedIn}>
                       {submitting ? "Submitting…" : "Submit review"}
                     </Button>
                   </div>
@@ -211,12 +278,21 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
                   {reviews.length === 0 ? (
                     <p className="text-sm text-text-muted">No reviews yet. Be the first to review.</p>
                   ) : (
-                    reviews.map((review, idx) => (
-                      <div key={`${review.user}-${idx}`} className="rounded-2xl bg-surface-2 p-4 text-sm">
-                        <p className="font-semibold">
-                          {review.user} — {review.rating}/5
+                    reviews.map((review) => (
+                      <div
+                        key={review.id ?? `${review.user}-${review.createdAt}`}
+                        className="rounded-2xl bg-surface-2 p-4 text-sm"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-semibold">{review.user}</p>
+                          <StarRating value={review.rating} readOnly size="sm" />
+                        </div>
+                        <p className="mt-1 text-xs text-text-muted">
+                          {getSentimentBadge(getSentimentScore(review.comment))}
+                          {review.createdAt
+                            ? ` · ${new Date(review.createdAt).toLocaleDateString()}`
+                            : ""}
                         </p>
-                        <p className="mt-1 text-text-muted">{getSentimentBadge(getSentimentScore(review.comment))}</p>
                         <p className="mt-2">{review.comment}</p>
                       </div>
                     ))

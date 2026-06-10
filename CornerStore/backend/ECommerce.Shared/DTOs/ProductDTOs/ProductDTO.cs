@@ -19,6 +19,7 @@ namespace ECommerce.Shared.DTOs.ProductDTOs
 
         public string ProductType { get; set; } = default!;
         public string ProductBrand { get; set; } = default!;
+        public string? BrandOfficialUrl { get; set; }
         public double AverageRating { get; set; }
         public int ReviewCount { get; set; }
         public int StockQuantity { get; set; }

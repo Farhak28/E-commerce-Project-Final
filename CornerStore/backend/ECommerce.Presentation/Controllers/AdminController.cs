@@ -19,13 +19,15 @@ namespace ECommerce.Presentation.Controllers
         private readonly IProductService _productService;
         private readonly ProductImageStorage _productImageStorage;
         private readonly IAuditLogService _auditLog;
+        private readonly IOrderFulfillmentService _fulfillment;
 
         public AdminController(
             IAdminService adminService,
             IAdminAiService adminAiService,
             IProductService productService,
             ProductImageStorage productImageStorage,
-            IAuditLogService auditLog
+            IAuditLogService auditLog,
+            IOrderFulfillmentService fulfillment
         )
         {
             _adminService = adminService;
@@ -33,6 +35,7 @@ namespace ECommerce.Presentation.Controllers
             _productService = productService;
             _productImageStorage = productImageStorage;
             _auditLog = auditLog;
+            _fulfillment = fulfillment;
         }
 
         [HttpGet("stats")]
@@ -46,6 +49,13 @@ namespace ECommerce.Presentation.Controllers
         public async Task<ActionResult<AdminAnalyticsDTO>> GetAnalytics()
         {
             var result = await _adminService.GetAnalyticsAsync();
+            return HandleResult(result);
+        }
+
+        [HttpGet("coupons/summary")]
+        public async Task<ActionResult<AdminCouponsSummaryDTO>> GetCouponsSummary()
+        {
+            var result = await _adminService.GetCouponsSummaryAsync();
             return HandleResult(result);
         }
 
@@ -181,6 +191,20 @@ namespace ECommerce.Presentation.Controllers
         public async Task<ActionResult<OrderToReturnDTO>> GetOrder(Guid id)
         {
             var result = await _adminService.GetOrderByIdAsync(id);
+            return HandleResult(result);
+        }
+
+        [HttpGet("orders/{id:guid}/tracking")]
+        public async Task<ActionResult<OrderTrackingDTO>> GetOrderTracking(Guid id)
+        {
+            var result = await _fulfillment.GetTrackingByOrderIdAsync(id);
+            return HandleResult(result);
+        }
+
+        [HttpPost("orders/{id:guid}/tracking/advance")]
+        public async Task<ActionResult<OrderTrackingDTO>> AdvanceOrderTracking(Guid id)
+        {
+            var result = await _fulfillment.AdvanceTrackingByOrderIdAsync(id);
             return HandleResult(result);
         }
 

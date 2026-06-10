@@ -17,5 +17,7 @@ namespace ECommerce.Shared.DTOs.OrderDTOs
         public CheckoutPaymentMethod PaymentMethod { get; init; } = CheckoutPaymentMethod.Card;
 
         public DateTimeOffset? ScheduledDeliveryAt { get; init; }
+
+        public string? CouponCode { get; init; }
     }
 }

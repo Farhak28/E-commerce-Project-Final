@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useCameraCapture } from "@/components/camera-capture";
 import { Button, Card, Input, Skeleton } from "@/components/ui";
 import { VisualSearchImagePreview, VisualSearchResultCards } from "@/components/visual-search-cards";
 import { searchByImage } from "@/lib/services/visual-search";
@@ -14,7 +15,6 @@ export default function VisualSearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [result, setResult] = useState<Awaited<ReturnType<typeof searchByImage>> | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const runVisualSearch = useCallback(async (file: File) => {
     const validationError = validateImageFile(file);
@@ -41,6 +41,10 @@ export default function VisualSearchPage() {
     }
   }, []);
 
+  const { openGallery, openCamera, inputs: cameraInputs } = useCameraCapture((file) => {
+    void runVisualSearch(file);
+  });
+
   const onFileChange = (file: File | undefined) => {
     if (!file) return;
     void runVisualSearch(file);
@@ -48,19 +52,12 @@ export default function VisualSearchPage() {
 
   return (
     <div className="space-y-6">
+      {cameraInputs}
       <section className="glass animate-float rounded-3xl p-6 md:p-8">
         <h1 className="section-title text-3xl font-bold">Visual Search</h1>
         <p className="mt-2 text-sm text-text-muted">
           Upload a product photo. Gemini Vision analyzes it and matches against the live Corner Store catalog.
         </p>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => onFileChange(e.target.files?.[0])}
-        />
         <div
           className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition ${
             dragOver ? "border-primary bg-primary/5" : "border-border"
@@ -76,10 +73,10 @@ export default function VisualSearchPage() {
           <p className="text-sm font-semibold">Drop an image here</p>
           <p className="mt-1 text-xs text-text-muted">JPG, PNG, WEBP · max 10 MB</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button type="button" variant="secondary" onClick={() => fileRef.current?.click()}>
+            <Button type="button" variant="secondary" onClick={openGallery}>
               Upload image
             </Button>
-            <Button type="button" variant="ghost" onClick={() => fileRef.current?.click()}>
+            <Button type="button" variant="ghost" onClick={openCamera}>
               Use camera
             </Button>
           </div>

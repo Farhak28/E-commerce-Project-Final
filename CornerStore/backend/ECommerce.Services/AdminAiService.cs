@@ -170,11 +170,15 @@ public class AdminAiService : IAdminAiService
             .Select(d => (DateTime?)d.UpdatedAt)
             .FirstOrDefaultAsync(ct);
 
-        var byCategory = await _db.KnowledgeDocuments.AsNoTracking()
+        var byCategoryRows = await _db.KnowledgeDocuments.AsNoTracking()
             .GroupBy(d => d.Category)
-            .Select(g => new KnowledgeCategoryCountDTO(g.Key, g.Count()))
+            .Select(g => new { Category = g.Key, Count = g.Count() })
             .OrderByDescending(x => x.Count)
             .ToListAsync(ct);
+
+        var byCategory = byCategoryRows
+            .Select(x => new KnowledgeCategoryCountDTO(x.Category, x.Count))
+            .ToList();
 
         return Result<KnowledgeStatsDTO>.Ok(
             new KnowledgeStatsDTO(docCount, chunkCount, lastUpdated, byCategory)

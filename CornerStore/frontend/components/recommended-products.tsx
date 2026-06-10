@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/product-card";
 import { Skeleton } from "@/components/ui";
 import { getProducts } from "@/lib/services/products";
 import {
+  getBoughtTogetherProducts,
   getPersonalizedProducts,
   getPersonalizedProductsGuest,
   getProductsByBudget,
@@ -25,6 +26,7 @@ import { getRecentlyViewedIds } from "@/lib/utils/recently-viewed";
 type Mode =
   | "similar"
   | "similar-price"
+  | "bought-together"
   | "trending"
   | "personalized"
   | "search"
@@ -61,6 +63,23 @@ export function RecommendedProducts({
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const trackingSource =
+    mode === "similar"
+      ? "similar"
+      : mode === "similar-price"
+        ? "similar-price"
+        : mode === "bought-together"
+          ? "bought-together"
+          : mode === "personalized"
+            ? "personalized"
+            : mode === "cart" || mode === "recent"
+              ? "for-products"
+              : mode === "budget"
+                ? "by-budget"
+                : mode === "category"
+                  ? "by-category"
+                  : "trending";
+
   const excluded = excludedIds ?? EMPTY_EXCLUDED;
   const excludedKey = useMemo(() => excluded.join(","), [excluded]);
   const cartKey = useMemo(() => (cartProductIds ?? []).join(","), [cartProductIds]);
@@ -86,6 +105,8 @@ export function RecommendedProducts({
 
         if (mode === "similar" && productId != null) {
           dtos = await getSimilarProducts(productId, 6);
+        } else if (mode === "bought-together" && productId != null) {
+          dtos = await getBoughtTogetherProducts(productId, 6);
         } else if (mode === "similar-price" && productId != null) {
           dtos = await getSimilarPriceProducts(productId, 6);
         } else if (mode === "trending") {
@@ -173,7 +194,11 @@ export function RecommendedProducts({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              recommendationSource={trackingSource}
+            />
           ))}
         </div>
       )}

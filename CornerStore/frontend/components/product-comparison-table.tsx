@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { BrandOfficialLink } from "@/components/brand-official-link";
 import type { Product } from "@/lib/types";
 
 const rows: { label: string; get: (p: Product) => string }[] = [
@@ -50,6 +51,17 @@ export function ProductComparisonTable({ products }: { products: Product[] }) {
               ))}
             </tr>
           ))}
+          <tr className="border-b border-border last:border-0 bg-surface-2/50">
+            <td className="p-3 font-medium text-text-muted">Official site</td>
+            {products.map((p) => (
+              <td key={`${p.id}-official`} className="p-3">
+                <BrandOfficialLink
+                  brandName={p.productBrand}
+                  officialUrl={p.brandOfficialUrl}
+                />
+              </td>
+            ))}
+          </tr>
         </tbody>
       </table>
     </div>

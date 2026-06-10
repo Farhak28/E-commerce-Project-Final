@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ProductImage } from "@/components/product-image";
+import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import type {
   AssistantStructuredData,
   ComparisonProduct,
@@ -19,41 +23,97 @@ export function AssistantProductCards({
   compareIds: number[];
   onToggleCompare: (id: number) => void;
 }) {
+  const { addToCart } = useCart();
+  const { toggle, has } = useWishlist();
+  const { isSignedIn } = useAuth();
+
   if (!products.length) return null;
 
   return (
     <div className="mt-3 space-y-2">
       {products.map((item) => (
-        <div key={item.id} className="overflow-hidden rounded-xl border border-border bg-surface">
-          <Link href={`/products/${item.id}`} className="flex gap-3 p-2 transition hover:bg-surface-2">
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
-              <ProductImage src={item.pictureUrl} alt="" fill sizes="56px" className="object-cover" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-1 font-semibold">{item.name}</p>
-              <p className="text-xs text-text-muted">
-                ${item.price} · {item.productType}
-                {item.rating ? ` · ★ ${item.rating.toFixed(1)}` : ""}
-              </p>
-            </div>
-          </Link>
-          <div className="flex border-t border-border">
-            <button
-              type="button"
-              className={`flex-1 py-1.5 text-[11px] font-semibold ${compareIds.includes(item.id) ? "bg-accent/10 text-accent" : "text-primary hover:bg-primary/5"}`}
-              onClick={() => onToggleCompare(item.id)}
-            >
-              {compareIds.includes(item.id) ? "✓ In compare" : "+ Compare"}
-            </button>
-            <Link
-              href={`/products/${item.id}`}
-              className="flex-1 border-l border-border py-1.5 text-center text-[11px] font-semibold text-primary hover:bg-primary/5"
-            >
-              View →
-            </Link>
-          </div>
-        </div>
+        <AssistantProductCard
+          key={item.id}
+          item={item}
+          compareIds={compareIds}
+          onToggleCompare={onToggleCompare}
+          addToCart={addToCart}
+          wishlistHas={has(item.id)}
+          onWishlistToggle={() => void toggle(item.id)}
+          isSignedIn={isSignedIn}
+        />
       ))}
+    </div>
+  );
+}
+
+function AssistantProductCard({
+  item,
+  compareIds,
+  onToggleCompare,
+  addToCart,
+  wishlistHas,
+  onWishlistToggle,
+  isSignedIn,
+}: {
+  item: Product;
+  compareIds: number[];
+  onToggleCompare: (id: number) => void;
+  addToCart: (productId: number, qty?: number) => Promise<void>;
+  wishlistHas: boolean;
+  onWishlistToggle: () => void;
+  isSignedIn: boolean;
+}) {
+  const [adding, setAdding] = useState(false);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <Link href={`/products/${item.id}`} className="flex gap-3 p-2 transition hover:bg-surface-2">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+          <ProductImage src={item.pictureUrl} alt="" fill sizes="56px" className="object-cover" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-1 font-semibold">{item.name}</p>
+          <p className="text-xs text-text-muted">
+            ${item.price} · {item.productType}
+            {item.rating ? ` · ★ ${item.rating.toFixed(1)}` : ""}
+          </p>
+        </div>
+      </Link>
+      <div className="grid grid-cols-4 border-t border-border text-[10px] font-semibold">
+        <button
+          type="button"
+          className="py-1.5 text-primary hover:bg-primary/5 disabled:opacity-50"
+          disabled={adding}
+          onClick={() => {
+            setAdding(true);
+            void addToCart(item.id, 1).finally(() => setAdding(false));
+          }}
+        >
+          {adding ? "…" : "Cart"}
+        </button>
+        <button
+          type="button"
+          className="border-l border-border py-1.5 text-primary hover:bg-primary/5 disabled:opacity-50"
+          disabled={!isSignedIn}
+          onClick={onWishlistToggle}
+        >
+          {wishlistHas ? "♥ Saved" : "Wishlist"}
+        </button>
+        <button
+          type="button"
+          className={`border-l border-border py-1.5 ${compareIds.includes(item.id) ? "bg-accent/10 text-accent" : "text-primary hover:bg-primary/5"}`}
+          onClick={() => onToggleCompare(item.id)}
+        >
+          {compareIds.includes(item.id) ? "✓ Compare" : "Compare"}
+        </button>
+        <Link
+          href={`/products/${item.id}`}
+          className="border-l border-border py-1.5 text-center text-primary hover:bg-primary/5"
+        >
+          View
+        </Link>
+      </div>
     </div>
   );
 }

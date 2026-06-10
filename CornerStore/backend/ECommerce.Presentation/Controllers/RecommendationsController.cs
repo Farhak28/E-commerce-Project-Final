@@ -35,6 +35,18 @@ public class RecommendationsController : ApiBaseController
         return Ok(products);
     }
 
+    [HttpGet("bought-together/{productId:int}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<ProductDTO>>> GetBoughtTogether(
+        int productId,
+        [FromQuery] int count = 6
+    )
+    {
+        var products = (await _recommendationService.GetBoughtTogetherAsync(productId, count)).ToList();
+        await _tracking.TrackImpressionAsync("bought-together", products.Select(p => p.Id));
+        return Ok(products);
+    }
+
     [HttpGet("personalized")]
     [Authorize]
     public async Task<ActionResult<IEnumerable<ProductDTO>>> GetPersonalized(

@@ -51,21 +51,59 @@ namespace ECommerce.Services
 
         public async Task<Result<AdminStatsDTO>> GetDashboardStatsAsync()
         {
-            var orders = await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync();
+            var orders = (
+                await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(new OrderSpecification())
+            ).ToList();
             var productsCount = await _unitOfWork
                 .GetRepository<Product, int>()
                 .CountAsync(new ProductWithCountSpecifications(new ProductQueryParams()));
             var usersCount = _userManager.Users.Count();
-            var ordersCount = orders.Count();
-            var revenue = orders.Sum(o => o.SubTotal + (o.DeliveryMethod?.Price ?? 0));
+            var ordersCount = orders.Count;
+            var revenue = orders.Sum(o => o.GetTotal());
             var pendingOrders = orders.Count(o =>
                 o.Status.ToString().Contains("Pending", StringComparison.OrdinalIgnoreCase)
                 || o.Status.ToString().Contains("Submitted", StringComparison.OrdinalIgnoreCase)
             );
             var lowStock = await _db.Products.CountAsync(p => p.StockQuantity <= LowStockThreshold);
+            var activeShipments = orders.Count(o =>
+                o.FulfillmentStage
+                    is not FulfillmentStage.Delivered
+                        and not FulfillmentStage.Cancelled
+                        and not FulfillmentStage.Returned
+                && o.Status
+                    is not OrderStatus.Cancelled
+                        and not OrderStatus.PaymentFailed
+                        and not OrderStatus.Returned
+            );
+            var deliveredOrders = orders.Count(o => o.FulfillmentStage == FulfillmentStage.Delivered);
+            var scheduledDeliveries = orders.Count(o => o.ScheduledDeliveryAt.HasValue);
+            var coupons = await _db.Set<UserCoupon>().AsNoTracking().ToListAsync();
+            var now = DateTimeOffset.UtcNow;
+            var activeCoupons = coupons.Count(c => !c.IsUsed && c.ExpiresAt > now);
+            var redeemedCoupons = coupons.Count(c => c.IsUsed);
+            var totalDiscounts = orders.Sum(o => o.DiscountAmount);
+            var reviewsCount = await _db.Reviews.CountAsync();
+            var brandsWithUrl = await _db.ProductBrands.CountAsync(b =>
+                b.OfficialWebsiteUrl != null && b.OfficialWebsiteUrl != ""
+            );
 
             return Result<AdminStatsDTO>.Ok(
-                new AdminStatsDTO(usersCount, ordersCount, revenue, productsCount, pendingOrders, lowStock)
+                new AdminStatsDTO(
+                    usersCount,
+                    ordersCount,
+                    revenue,
+                    productsCount,
+                    pendingOrders,
+                    lowStock,
+                    activeShipments,
+                    deliveredOrders,
+                    scheduledDeliveries,
+                    activeCoupons,
+                    redeemedCoupons,
+                    totalDiscounts,
+                    reviewsCount,
+                    brandsWithUrl
+                )
             );
         }
 
@@ -83,7 +121,7 @@ namespace ECommerce.Services
                     var label = month.ToString("MMM yyyy");
                     var amount = orders
                         .Where(o => o.OrderDate.Year == month.Year && o.OrderDate.Month == month.Month)
-                        .Sum(o => o.SubTotal + (o.DeliveryMethod?.Price ?? 0));
+                        .Sum(o => o.GetTotal());
                     return new RevenueByMonthDTO(label, amount);
                 })
                 .Reverse()
@@ -95,10 +133,60 @@ namespace ECommerce.Services
                 .OrderByDescending(x => x.Count)
                 .ToList();
 
+            var fulfillmentByStage = orders
+                .GroupBy(o => o.FulfillmentStage.ToString())
+                .Select(g => new FulfillmentByStageDTO(g.Key, g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+
             var assistantEstimate = await _db.AssistantInteractionLogs.CountAsync();
+            var scheduledDeliveries = orders.Count(o => o.ScheduledDeliveryAt.HasValue);
+            var totalDeliveryRevenue = orders.Sum(o =>
+                o.DeliveryPrice > 0 ? o.DeliveryPrice : o.DeliveryMethod?.Price ?? 0
+            );
+            var totalDiscounts = orders.Sum(o => o.DiscountAmount);
+            var visualSearchEvents = await _db.VisualSearchEvents.CountAsync();
 
             return Result<AdminAnalyticsDTO>.Ok(
-                new AdminAnalyticsDTO(revenueByMonth, ordersByStatus, assistantEstimate)
+                new AdminAnalyticsDTO(
+                    revenueByMonth,
+                    ordersByStatus,
+                    fulfillmentByStage,
+                    assistantEstimate,
+                    scheduledDeliveries,
+                    totalDeliveryRevenue,
+                    totalDiscounts,
+                    visualSearchEvents
+                )
+            );
+        }
+
+        public async Task<Result<AdminCouponsSummaryDTO>> GetCouponsSummaryAsync()
+        {
+            var coupons = await _db.Set<UserCoupon>().AsNoTracking().ToListAsync();
+            var now = DateTimeOffset.UtcNow;
+            var orders = (
+                await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(new OrderSpecification())
+            ).ToList();
+
+            var byReward = coupons
+                .GroupBy(c => c.RewardKey)
+                .Select(g => new AdminCouponTierDTO(
+                    g.Key,
+                    g.Count(c => !c.IsUsed && c.ExpiresAt > now),
+                    g.Count(c => c.IsUsed)
+                ))
+                .OrderByDescending(x => x.Active + x.Redeemed)
+                .ToList();
+
+            return Result<AdminCouponsSummaryDTO>.Ok(
+                new AdminCouponsSummaryDTO(
+                    coupons.Count(c => !c.IsUsed && c.ExpiresAt > now),
+                    coupons.Count(c => c.IsUsed),
+                    coupons.Count(c => !c.IsUsed && c.ExpiresAt <= now),
+                    orders.Sum(o => o.DiscountAmount),
+                    byReward
+                )
             );
         }
 

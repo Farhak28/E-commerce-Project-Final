@@ -18,7 +18,8 @@ public record UpdateKnowledgeDocumentDTO(string Title, string Content, string Ca
 public record AssistantContextDTO(
     IReadOnlyList<int>? CartProductIds = null,
     IReadOnlyList<int>? RecentProductIds = null,
-    IReadOnlyList<int>? CompareIds = null
+    IReadOnlyList<int>? CompareIds = null,
+    string? BasketId = null
 );
 
 public record AssistantChatMessageDTO(string Role, string Content);

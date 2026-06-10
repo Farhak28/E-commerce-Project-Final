@@ -145,6 +145,28 @@ namespace ECommerce.Services
             CreateReviewDTO createReviewDto
         )
         {
+            if (createReviewDto.Rating is < 1 or > 5)
+            {
+                return Error.Validation(
+                    "Review.InvalidRating",
+                    "Rating must be between 1 and 5 stars."
+                );
+            }
+
+            var comment = createReviewDto.Comment?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(comment))
+            {
+                return Error.Validation("Review.CommentRequired", "Please write a review comment.");
+            }
+
+            if (comment.Length > 2000)
+            {
+                return Error.Validation(
+                    "Review.CommentTooLong",
+                    "Comment must be 2000 characters or less."
+                );
+            }
+
             var product = await _unitOfWork.GetRepository<Product, int>().GetByIdAsync(productId);
             if (product is null)
             {
@@ -154,14 +176,32 @@ namespace ECommerce.Services
                 );
             }
 
+            var reviewRepo = _unitOfWork.GetRepository<Review, int>();
+            var existingReviews = await reviewRepo.GetAllAsync(
+                new ReviewsByProductSpecification(productId)
+            );
+            var normalizedUser = userName.Trim();
+            if (
+                existingReviews.Any(r =>
+                    r.UserName.Equals(normalizedUser, StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                return Error.Validation(
+                    "Review.AlreadyExists",
+                    "You have already reviewed this product."
+                );
+            }
+
             var review = _mapper.Map<Review>(createReviewDto);
             review.ProductId = productId;
-            review.UserName = string.IsNullOrWhiteSpace(userName)
-                ? createReviewDto.UserName ?? "Guest"
-                : userName;
+            review.UserName = string.IsNullOrWhiteSpace(normalizedUser)
+                ? createReviewDto.UserName ?? "Customer"
+                : normalizedUser;
+            review.Comment = comment;
             review.CreatedAt = DateTime.UtcNow;
 
-            await _unitOfWork.GetRepository<Review, int>().AddAsync(review);
+            await reviewRepo.AddAsync(review);
             await _unitOfWork.SaveChangesAsync();
 
             return _mapper.Map<ReviewDTO>(review);

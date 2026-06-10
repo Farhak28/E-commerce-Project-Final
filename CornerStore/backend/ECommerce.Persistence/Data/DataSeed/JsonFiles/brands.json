@@ -1,89 +1,31 @@
 [
-  {
-    "Name": "Apple"
-  },
-  {
-    "Name": "Samsung"
-  },
-  {
-    "Name": "Sony"
-  },
-  {
-    "Name": "ASUS"
-  },
-  {
-    "Name": "Dell"
-  },
-  {
-    "Name": "HP"
-  },
-  {
-    "Name": "Lenovo"
-  },
-  {
-    "Name": "Acer"
-  },
-  {
-    "Name": "MSI"
-  },
-  {
-    "Name": "Huawei"
-  },
-  {
-    "Name": "Xiaomi"
-  },
-  {
-    "Name": "Oppo"
-  },
-  {
-    "Name": "Realme"
-  },
-  {
-    "Name": "OnePlus"
-  },
-  {
-    "Name": "Google"
-  },
-  {
-    "Name": "Microsoft"
-  },
-  {
-    "Name": "Nintendo"
-  },
-  {
-    "Name": "Logitech"
-  },
-  {
-    "Name": "Razer"
-  },
-  {
-    "Name": "HyperX"
-  },
-  {
-    "Name": "JBL"
-  },
-  {
-    "Name": "Bose"
-  },
-  {
-    "Name": "Beats"
-  },
-  {
-    "Name": "Anker"
-  },
-  {
-    "Name": "Corsair"
-  },
-  {
-    "Name": "Cooler Master"
-  },
-  {
-    "Name": "Kingston"
-  },
-  {
-    "Name": "Seagate"
-  },
-  {
-    "Name": "Western Digital"
-  }
+  { "Name": "Apple", "OfficialWebsiteUrl": "https://www.apple.com" },
+  { "Name": "Samsung", "OfficialWebsiteUrl": "https://www.samsung.com" },
+  { "Name": "Sony", "OfficialWebsiteUrl": "https://www.sony.com" },
+  { "Name": "ASUS", "OfficialWebsiteUrl": "https://www.asus.com" },
+  { "Name": "Dell", "OfficialWebsiteUrl": "https://www.dell.com" },
+  { "Name": "HP", "OfficialWebsiteUrl": "https://www.hp.com" },
+  { "Name": "Lenovo", "OfficialWebsiteUrl": "https://www.lenovo.com" },
+  { "Name": "Acer", "OfficialWebsiteUrl": "https://www.acer.com" },
+  { "Name": "MSI", "OfficialWebsiteUrl": "https://www.msi.com" },
+  { "Name": "Huawei", "OfficialWebsiteUrl": "https://consumer.huawei.com" },
+  { "Name": "Xiaomi", "OfficialWebsiteUrl": "https://www.mi.com" },
+  { "Name": "Oppo", "OfficialWebsiteUrl": "https://www.oppo.com" },
+  { "Name": "Realme", "OfficialWebsiteUrl": "https://www.realme.com" },
+  { "Name": "OnePlus", "OfficialWebsiteUrl": "https://www.oneplus.com" },
+  { "Name": "Google", "OfficialWebsiteUrl": "https://store.google.com" },
+  { "Name": "Microsoft", "OfficialWebsiteUrl": "https://www.microsoft.com" },
+  { "Name": "Nintendo", "OfficialWebsiteUrl": "https://www.nintendo.com" },
+  { "Name": "Logitech", "OfficialWebsiteUrl": "https://www.logitech.com" },
+  { "Name": "Razer", "OfficialWebsiteUrl": "https://www.razer.com" },
+  { "Name": "HyperX", "OfficialWebsiteUrl": "https://hyperx.com" },
+  { "Name": "JBL", "OfficialWebsiteUrl": "https://www.jbl.com" },
+  { "Name": "Bose", "OfficialWebsiteUrl": "https://www.bose.com" },
+  { "Name": "Beats", "OfficialWebsiteUrl": "https://www.beatsbydre.com" },
+  { "Name": "Anker", "OfficialWebsiteUrl": "https://www.anker.com" },
+  { "Name": "Corsair", "OfficialWebsiteUrl": "https://www.corsair.com" },
+  { "Name": "Cooler Master", "OfficialWebsiteUrl": "https://www.coolermaster.com" },
+  { "Name": "Kingston", "OfficialWebsiteUrl": "https://www.kingston.com" },
+  { "Name": "Seagate", "OfficialWebsiteUrl": "https://www.seagate.com" },
+  { "Name": "Western Digital", "OfficialWebsiteUrl": "https://www.westerndigital.com" }
 ]

@@ -115,3 +115,31 @@ export function formatScheduledDelivery(iso: string | null | undefined): string 
   if (!iso) return null;
   return formatOrderDate(iso);
 }
+
+const FULFILLMENT_LABELS: Record<string, string> = {
+  OrderPlaced: "Order placed",
+  Confirmed: "Confirmed",
+  Processing: "Processing at warehouse",
+  Shipped: "Shipped",
+  OutForDelivery: "Out for delivery",
+  Delivered: "Delivered",
+  Cancelled: "Cancelled",
+  ReturnRequested: "Return requested",
+  Returned: "Returned",
+};
+
+export function formatFulfillmentStage(stage: string): string {
+  return FULFILLMENT_LABELS[stage] ?? stage.replace(/([A-Z])/g, " $1").trim();
+}
+
+export function formatTrackingTimestamp(iso: string): string {
+  return formatOrderDate(iso);
+}
+
+export function fulfillmentTone(stage: string): OrderStatusMeta["tone"] {
+  if (stage === "Delivered") return "success";
+  if (stage === "Cancelled" || stage === "Returned") return "neutral";
+  if (stage === "ReturnRequested") return "warning";
+  if (stage === "OutForDelivery" || stage === "Shipped") return "success";
+  return "warning";
+}

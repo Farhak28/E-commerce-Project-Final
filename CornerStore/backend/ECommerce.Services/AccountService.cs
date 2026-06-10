@@ -11,16 +11,19 @@ public class AccountService : IAccountService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuthenticationService _authenticationService;
     private readonly IWishlistService _wishlistService;
+    private readonly ICouponService _couponService;
 
     public AccountService(
         IUnitOfWork unitOfWork,
         IAuthenticationService authenticationService,
-        IWishlistService wishlistService
+        IWishlistService wishlistService,
+        ICouponService couponService
     )
     {
         _unitOfWork = unitOfWork;
         _authenticationService = authenticationService;
         _wishlistService = wishlistService;
+        _couponService = couponService;
     }
 
     public async Task<Result<AccountDashboardDTO>> GetDashboardAsync(string email)
@@ -75,12 +78,16 @@ public class AccountService : IAccountService
             .Select(i => i.Product?.ProductName)
             .LastOrDefault(n => !string.IsNullOrWhiteSpace(n));
 
+        var coupons = await _couponService.SyncAndGetCouponsAsync(email);
+        var availableCoupons = coupons.Count(c => !c.IsUsed && c.ExpiresAt > DateTimeOffset.UtcNow);
+
         var dashboard = new AccountDashboardDTO(
             totalOrders,
             activeOrders,
             rewardPoints,
             loyaltyTier,
             profileCompletion,
+            availableCoupons,
             topInterests,
             preferences,
             lastItem != null ? $"Last ordered: {lastItem}" : null

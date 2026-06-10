@@ -26,10 +26,11 @@ import {
   usesStripe,
   type CheckoutPaymentMethod,
 } from "@/lib/payment-methods";
+import { applyAccountCoupon } from "@/lib/services/account";
 import * as ordersService from "@/lib/services/orders";
 import * as paymentsService from "@/lib/services/payments";
 import { isStripeConfigured, loadStripeConfig, type StripeConfigDTO } from "@/lib/stripe-config";
-import type { AddressDTO, DeliveryMethodDTO, SavedAddressDTO } from "@/lib/types";
+import type { AddressDTO, DeliveryMethodDTO, DeliveryQuoteDTO, SavedAddressDTO } from "@/lib/types";
 import { defaultSaveAsName, emptyAddress, isAddressComplete, savedToAddressDTO } from "@/lib/utils/address";
 import { clearStripeReturnParams, readStripeReturnStatus } from "@/lib/stripe-checkout-return";
 
@@ -60,6 +61,7 @@ export function CheckoutFlow() {
     lineItems,
     subtotal,
     shippingPrice,
+    discountAmount,
     basket,
     setDeliveryMethod,
     refreshCart,
@@ -92,6 +94,8 @@ export function CheckoutFlow() {
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethodDTO[]>([]);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
   const [scheduledDeliveryAt, setScheduledDeliveryAt] = useState("");
+  const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuoteDTO | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("cod");
   const [stripeConfig, setStripeConfig] = useState<StripeConfigDTO | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -199,7 +203,57 @@ export function CheckoutFlow() {
     setAddress(resolveCheckoutAddress(addressSelection, savedAddresses, newAddress));
   }, [addressSelection, savedAddresses, newAddress]);
 
-  const total = useMemo(() => subtotal + shippingPrice, [subtotal, shippingPrice]);
+  const effectiveShipping = deliveryQuote?.totalPrice ?? shippingPrice;
+  const effectiveDiscount = basket?.discountAmount ?? discountAmount;
+  const total = useMemo(
+    () => Math.max(0, subtotal + effectiveShipping - effectiveDiscount),
+    [subtotal, effectiveShipping, effectiveDiscount],
+  );
+
+  const scheduledIso = useMemo(
+    () => (scheduledDeliveryAt ? new Date(scheduledDeliveryAt).toISOString() : null),
+    [scheduledDeliveryAt],
+  );
+
+  useEffect(() => {
+    if (!selectedDeliveryId) {
+      setDeliveryQuote(null);
+      return;
+    }
+
+    let cancelled = false;
+    setQuoteLoading(true);
+    void ordersService
+      .getDeliveryQuote(selectedDeliveryId, scheduledIso)
+      .then((quote) => {
+        if (!cancelled) setDeliveryQuote(quote);
+      })
+      .catch(() => {
+        if (!cancelled) setDeliveryQuote(null);
+      })
+      .finally(() => {
+        if (!cancelled) setQuoteLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDeliveryId, scheduledIso]);
+
+  useEffect(() => {
+    if (!basket?.id || !basket.couponCode || !selectedDeliveryId) return;
+
+    let cancelled = false;
+    void applyAccountCoupon(basket.id, basket.couponCode)
+      .then(async () => {
+        if (!cancelled) await refreshCart();
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [basket?.id, basket?.couponCode, selectedDeliveryId, deliveryQuote?.totalPrice, refreshCart]);
 
   const activeClientSecret = clientSecret ?? paymentsService.readClientSecret(basket ?? {});
 
@@ -250,7 +304,11 @@ export function CheckoutFlow() {
     setLoading(true);
     setError(null);
     try {
-      await setDeliveryMethod(selectedDeliveryId);
+      await setDeliveryMethod(
+        selectedDeliveryId,
+        scheduledIso,
+        deliveryQuote?.totalPrice ?? null,
+      );
       setStep(2);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save delivery method");
@@ -264,7 +322,7 @@ export function CheckoutFlow() {
     resetPaymentState();
     setLoading(true);
     try {
-      await syncBasket(selectedDeliveryId);
+      await syncBasket(selectedDeliveryId, scheduledIso, deliveryQuote?.totalPrice ?? null);
       const updated = await paymentsService.createOrUpdatePaymentIntent(basket.id);
       const secret = paymentsService.readClientSecret(updated);
       if (!secret) {
@@ -282,7 +340,17 @@ export function CheckoutFlow() {
     } finally {
       setLoading(false);
     }
-  }, [basket?.id, resetPaymentState, ready, language, refreshCart, syncBasket, selectedDeliveryId]);
+  }, [
+    basket?.id,
+    resetPaymentState,
+    ready,
+    language,
+    refreshCart,
+    syncBasket,
+    selectedDeliveryId,
+    scheduledIso,
+    deliveryQuote?.totalPrice,
+  ]);
 
   useEffect(() => {
     if (step !== 2 || !usesStripe(paymentMethod) || !stripeReady || !basket?.id || clientSecret || paymentReady) {
@@ -295,7 +363,7 @@ export function CheckoutFlow() {
 
     void (async () => {
       try {
-        await syncBasket(selectedDeliveryId);
+        await syncBasket(selectedDeliveryId, scheduledIso, deliveryQuote?.totalPrice ?? null);
         const updated = await paymentsService.createOrUpdatePaymentIntent(basket.id);
         if (cancelled) return;
         const secret = paymentsService.readClientSecret(updated);
@@ -321,7 +389,21 @@ export function CheckoutFlow() {
     return () => {
       cancelled = true;
     };
-  }, [step, paymentMethod, stripeReady, basket?.id, clientSecret, paymentReady, ready, language, refreshCart, syncBasket, selectedDeliveryId]);
+  }, [
+    step,
+    paymentMethod,
+    stripeReady,
+    basket?.id,
+    clientSecret,
+    paymentReady,
+    ready,
+    language,
+    refreshCart,
+    syncBasket,
+    selectedDeliveryId,
+    scheduledIso,
+    deliveryQuote?.totalPrice,
+  ]);
 
   const handlePaymentMethodChange = (method: CheckoutPaymentMethod) => {
     setPaymentMethod(method);
@@ -355,15 +437,14 @@ export function CheckoutFlow() {
     setLoading(true);
     setError(null);
     try {
-      await syncBasket(deliveryId);
+      await syncBasket(deliveryId, scheduledIso, deliveryQuote?.totalPrice ?? null);
       await ordersService.createOrder({
         basketId: basket.id,
         deliveryMethodId: deliveryId,
         shipToAddress: address,
         paymentMethod: PAYMENT_METHOD_API[paymentMethod],
-        ...(scheduledDeliveryAt
-          ? { scheduledDeliveryAt: new Date(scheduledDeliveryAt).toISOString() }
-          : {}),
+        ...(scheduledIso ? { scheduledDeliveryAt: scheduledIso } : {}),
+        ...(basket.couponCode ? { couponCode: basket.couponCode } : {}),
       });
       await clearCart();
       router.push("/account/orders?placed=1");
@@ -381,7 +462,8 @@ export function CheckoutFlow() {
     paymentMethod,
     ready,
     router,
-    scheduledDeliveryAt,
+    scheduledIso,
+    deliveryQuote?.totalPrice,
     selectedDeliveryId,
     syncBasket,
   ]);
@@ -540,6 +622,27 @@ export function CheckoutFlow() {
                 <p className="text-xs text-text-muted">
                   {ready ? t("scheduleHint", language) : "Must be at least 2 hours from now, within 14 days."}
                 </p>
+                {quoteLoading ? (
+                  <Skeleton className="mt-2 h-16 w-full" />
+                ) : deliveryQuote && scheduledDeliveryAt ? (
+                  <div className="mt-3 space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                    <p className="font-semibold">
+                      {ready ? "Calculated delivery cost" : "Calculated delivery cost"}
+                    </p>
+                    {deliveryQuote.lines.map((line) => (
+                      <div key={line.label} className="flex justify-between gap-2 text-text-muted">
+                        <span>{line.label}</span>
+                        <span className={line.amount < 0 ? "text-emerald-600" : ""}>
+                          {line.amount < 0 ? "-" : ""}${Math.abs(line.amount).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground">
+                      <span>Total shipping</span>
+                      <span>${deliveryQuote.totalPrice.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -727,8 +830,19 @@ export function CheckoutFlow() {
             </p>
             <p className="flex justify-between">
               <span>{ready ? t("shipping", language) : "Shipping"}</span>
-              <span>${shippingPrice.toFixed(2)}</span>
+              <span>${effectiveShipping.toFixed(2)}</span>
             </p>
+            {effectiveDiscount > 0 ? (
+              <p className="flex justify-between text-emerald-700 dark:text-emerald-300">
+                <span>{ready ? "Coupon" : "Coupon"} {basket?.couponCode ? `(${basket.couponCode})` : ""}</span>
+                <span>-${effectiveDiscount.toFixed(2)}</span>
+              </p>
+            ) : null}
+            {deliveryQuote && scheduledDeliveryAt && deliveryQuote.totalPrice !== deliveryQuote.basePrice ? (
+              <p className="text-xs text-text-muted">
+                Includes time-slot adjustments for your selected delivery window.
+              </p>
+            ) : null}
             <p className="flex justify-between font-bold">
               <span>{ready ? t("total", language) : "Total"}</span>
               <span>${total.toFixed(2)}</span>

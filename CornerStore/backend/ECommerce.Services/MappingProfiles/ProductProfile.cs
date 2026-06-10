@@ -21,6 +21,10 @@ namespace ECommerce.Services.MappingProfiles
                     opt => opt.MapFrom(src => src.ProductBrand.Name)
                 )
                 .ForMember(
+                    dest => dest.BrandOfficialUrl,
+                    opt => opt.MapFrom(src => src.ProductBrand.OfficialWebsiteUrl)
+                )
+                .ForMember(
                     dest => dest.ProductType,
                     opt => opt.MapFrom(src => src.ProductType.Name)
                 )
