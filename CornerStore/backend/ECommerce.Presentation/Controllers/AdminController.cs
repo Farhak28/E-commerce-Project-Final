@@ -20,6 +20,7 @@ namespace ECommerce.Presentation.Controllers
         private readonly ProductImageStorage _productImageStorage;
         private readonly IAuditLogService _auditLog;
         private readonly IOrderFulfillmentService _fulfillment;
+        private readonly IDeliverySchedulingService _deliveryScheduling;
 
         public AdminController(
             IAdminService adminService,
@@ -27,7 +28,8 @@ namespace ECommerce.Presentation.Controllers
             IProductService productService,
             ProductImageStorage productImageStorage,
             IAuditLogService auditLog,
-            IOrderFulfillmentService fulfillment
+            IOrderFulfillmentService fulfillment,
+            IDeliverySchedulingService deliveryScheduling
         )
         {
             _adminService = adminService;
@@ -36,6 +38,7 @@ namespace ECommerce.Presentation.Controllers
             _productImageStorage = productImageStorage;
             _auditLog = auditLog;
             _fulfillment = fulfillment;
+            _deliveryScheduling = deliveryScheduling;
         }
 
         [HttpGet("stats")]
@@ -208,6 +211,34 @@ namespace ECommerce.Presentation.Controllers
             return HandleResult(result);
         }
 
+        [HttpGet("returns")]
+        public async Task<ActionResult<AdminPagedResult<OrderToReturnDTO>>> GetReturns(
+            [FromQuery] AdminListQueryParams queryParams,
+            [FromQuery] string? status = null
+        )
+        {
+            var result = await _adminService.GetReturnsPagedAsync(queryParams, status);
+            return HandleResult(result);
+        }
+
+        [HttpPost("returns/{orderId:guid}/approve")]
+        public async Task<ActionResult<OrderToReturnDTO>> ApproveReturn(Guid orderId)
+        {
+            var result = await _adminService.ApproveReturnAsync(orderId);
+            if (result.IsSuccess)
+                await LogAudit("Approve", "Return", orderId.ToString());
+            return HandleResult(result);
+        }
+
+        [HttpPost("returns/{orderId:guid}/reject")]
+        public async Task<ActionResult<OrderToReturnDTO>> RejectReturn(Guid orderId)
+        {
+            var result = await _adminService.RejectReturnAsync(orderId);
+            if (result.IsSuccess)
+                await LogAudit("Reject", "Return", orderId.ToString());
+            return HandleResult(result);
+        }
+
         [HttpGet("reviews")]
         public async Task<ActionResult<AdminPagedResult<AdminReviewDTO>>> GetReviews(
             [FromQuery] AdminListQueryParams queryParams
@@ -301,6 +332,89 @@ namespace ECommerce.Presentation.Controllers
         public async Task<ActionResult<SystemHealthDTO>> GetSystemHealth(CancellationToken ct)
         {
             return HandleResult(await _adminAiService.GetSystemHealthAsync(ct));
+        }
+
+        [HttpGet("shipping")]
+        public async Task<ActionResult<AdminShippingConfigDTO>> GetShippingConfig()
+        {
+            return HandleResult(await _deliveryScheduling.GetAdminConfigAsync());
+        }
+
+        [HttpPut("shipping/settings")]
+        public async Task<ActionResult<DeliverySchedulingSettingsDTO>> UpdateShippingSettings(
+            UpdateDeliverySchedulingSettingsRequest request
+        )
+        {
+            var result = await _deliveryScheduling.UpdateSettingsAsync(request);
+            if (result.IsSuccess)
+                await LogAudit("Update", "DeliverySchedulingSettings", "1");
+            return HandleResult(result);
+        }
+
+        [HttpPost("shipping/time-slots")]
+        public async Task<ActionResult<DeliveryTimeSlotAdminDTO>> CreateTimeSlot(UpsertDeliveryTimeSlotRequest request)
+        {
+            var result = await _deliveryScheduling.UpsertTimeSlotAsync(null, request);
+            if (result.IsSuccess)
+                await LogAudit("Create", "DeliveryTimeSlot", result.Value!.Id.ToString(), result.Value.Label);
+            return HandleResult(result);
+        }
+
+        [HttpPut("shipping/time-slots/{id:int}")]
+        public async Task<ActionResult<DeliveryTimeSlotAdminDTO>> UpdateTimeSlot(
+            int id,
+            UpsertDeliveryTimeSlotRequest request
+        )
+        {
+            var result = await _deliveryScheduling.UpsertTimeSlotAsync(id, request);
+            if (result.IsSuccess)
+                await LogAudit("Update", "DeliveryTimeSlot", id.ToString(), result.Value!.Label);
+            return HandleResult(result);
+        }
+
+        [HttpDelete("shipping/time-slots/{id:int}")]
+        public async Task<IActionResult> DeleteTimeSlot(int id)
+        {
+            var result = await _deliveryScheduling.DeleteTimeSlotAsync(id);
+            if (result.IsSuccess)
+                await LogAudit("Delete", "DeliveryTimeSlot", id.ToString());
+            return HandleResult(result);
+        }
+
+        [HttpPost("shipping/holidays")]
+        public async Task<ActionResult<DeliveryHolidayDTO>> AddHoliday(CreateDeliveryHolidayRequest request)
+        {
+            var result = await _deliveryScheduling.AddHolidayAsync(request);
+            if (result.IsSuccess)
+                await LogAudit("Create", "DeliveryHoliday", result.Value!.Id.ToString(), result.Value.Name);
+            return HandleResult(result);
+        }
+
+        [HttpDelete("shipping/holidays/{id:int}")]
+        public async Task<IActionResult> DeleteHoliday(int id)
+        {
+            var result = await _deliveryScheduling.DeleteHolidayAsync(id);
+            if (result.IsSuccess)
+                await LogAudit("Delete", "DeliveryHoliday", id.ToString());
+            return HandleResult(result);
+        }
+
+        [HttpPost("shipping/blocked-dates")]
+        public async Task<ActionResult<BlockedDeliveryDateDTO>> AddBlockedDate(CreateBlockedDeliveryDateRequest request)
+        {
+            var result = await _deliveryScheduling.AddBlockedDateAsync(request);
+            if (result.IsSuccess)
+                await LogAudit("Create", "BlockedDeliveryDate", result.Value!.Id.ToString(), result.Value.Date);
+            return HandleResult(result);
+        }
+
+        [HttpDelete("shipping/blocked-dates/{id:int}")]
+        public async Task<IActionResult> DeleteBlockedDate(int id)
+        {
+            var result = await _deliveryScheduling.DeleteBlockedDateAsync(id);
+            if (result.IsSuccess)
+                await LogAudit("Delete", "BlockedDeliveryDate", id.ToString());
+            return HandleResult(result);
         }
 
         private async Task LogAudit(string action, string entityType, string? entityId, string? details = null)

@@ -28,6 +28,13 @@ services:
       timeout: 3s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: cornerstore-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   backend:
     build:
       context: ./backend
@@ -39,6 +46,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     ports:
       - "${API_PORT:-5141}:5141"
     environment:
@@ -59,6 +68,17 @@ services:
       OrderFulfillment__StageIntervalMinutes: "2"
       OrderFulfillment__WorkerIntervalSeconds: "45"
       URLs__BaseUrl: "http://localhost:5141/"
+      Email__Enabled: "${EMAIL_ENABLED:-true}"
+      Email__DeliveryMode: "${EMAIL_DELIVERY_MODE:-Capture}"
+      Email__FromName: "${EMAIL_FROM_NAME:-Corner Store}"
+      Email__FromAddress: "${EMAIL_FROM_ADDRESS:-noreply@cornerstore.local}"
+      Email__SmtpHost: "${EMAIL_SMTP_HOST:-mailpit}"
+      Email__SmtpPort: "${EMAIL_SMTP_PORT:-1025}"
+      Email__UseSsl: "${EMAIL_USE_SSL:-false}"
+      Email__Username: "${EMAIL_USERNAME:-}"
+      Email__Password: "${EMAIL_PASSWORD:-}"
+      Email__CaptureInboxUrl: "http://localhost:8025"
+      Email__StorefrontUrl: "http://localhost:${FRONTEND_PORT:-3848}"
     volumes:
       - cornerstore-product-images:/app/wwwroot/images/products
 

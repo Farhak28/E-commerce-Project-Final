@@ -1,10 +1,12 @@
 using ECommerce.Domain.Contracts;
+using ECommerce.Domain.Entities.IdentityModule;
 using ECommerce.Domain.Entities.NotificationModule;
 using ECommerce.Services.Abstraction;
 using ECommerce.Shared.CommonResponses;
 using ECommerce.Shared.DTOs.NotificationDTOs;
+using ECommerce.Shared.Localization;
 using Microsoft.AspNetCore.Identity;
-using ECommerce.Domain.Entities.IdentityModule;
+using Microsoft.Extensions.Logging;
 
 namespace ECommerce.Services;
 
@@ -12,11 +14,23 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IRequestCultureAccessor _culture;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<NotificationService> _logger;
 
-    public NotificationService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
+    public NotificationService(
+        IUnitOfWork unitOfWork,
+        UserManager<ApplicationUser> userManager,
+        IRequestCultureAccessor culture,
+        IEmailService emailService,
+        ILogger<NotificationService> logger
+    )
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
+        _culture = culture;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<Result<IEnumerable<NotificationDTO>>> GetForUserAsync(string email)
@@ -26,7 +40,7 @@ public class NotificationService : INotificationService
         var userItems = items
             .Where(n => string.Equals(n.UserEmail, email, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(n => n.CreatedAt)
-            .Select(Map)
+            .Select(n => Map(n, _culture.Language))
             .ToList();
 
         return Result<IEnumerable<NotificationDTO>>.Ok(userItems);
@@ -76,7 +90,8 @@ public class NotificationService : INotificationService
         string email,
         string title,
         string body,
-        string category = "general"
+        string category = "general",
+        CustomerEmailTrigger? emailTrigger = null
     )
     {
         var repo = _unitOfWork.GetRepository<Notification, int>();
@@ -92,7 +107,30 @@ public class NotificationService : INotificationService
             }
         );
         await _unitOfWork.SaveChangesAsync();
+
+        if (emailTrigger.HasValue)
+            await TrySendEmailAsync(email, title, body, category, emailTrigger.Value);
+
         return Result.Ok();
+    }
+
+    private async Task TrySendEmailAsync(
+        string email,
+        string title,
+        string body,
+        string category,
+        CustomerEmailTrigger trigger
+    )
+    {
+        try
+        {
+            var localized = NotificationStrings.Localize(title, body, StoreLocale.English);
+            await _emailService.SendCustomerUpdateAsync(email, localized.Title, localized.Body, category);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "In-app notification saved but email could not be sent to {Email}", email);
+        }
     }
 
     public async Task SeedWelcomeNotificationsAsync()
@@ -135,6 +173,9 @@ public class NotificationService : INotificationService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    private static NotificationDTO Map(Notification n) =>
-        new(n.Id, n.Title, n.Body, n.IsRead, n.Category, n.CreatedAt);
+    private static NotificationDTO Map(Notification n, string language)
+    {
+        var (title, body) = NotificationStrings.Localize(n.Title, n.Body, language);
+        return new NotificationDTO(n.Id, title, body, n.IsRead, n.Category, n.CreatedAt);
+    }
 }

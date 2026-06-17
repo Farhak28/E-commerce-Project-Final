@@ -6,17 +6,20 @@ import { Button, Card, Skeleton } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
 import { getAccountCoupons } from "@/lib/services/account";
 import type { UserCouponDTO } from "@/lib/types";
-
-function formatExpiry(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
+import { useI18n, useLocaleCode } from "@/lib/use-i18n";
 
 export default function AccountCouponsPage() {
   const { isSignedIn } = useAuth();
+  const { t, language } = useI18n();
+  const locale = useLocaleCode(language);
+
+  function formatExpiry(iso: string): string {
+    try {
+      return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  }
   const [coupons, setCoupons] = useState<UserCouponDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
@@ -50,9 +53,9 @@ export default function AccountCouponsPage() {
   if (!isSignedIn) {
     return (
       <Card>
-        <p className="text-sm text-text-muted">Sign in to view your personalized coupons.</p>
-        <Link href="/login" className="mt-3 inline-flex text-sm font-semibold text-primary">
-          Sign in
+        <p className="text-sm text-text-muted" suppressHydrationWarning>{t("signInForCoupons")}</p>
+        <Link href="/login" className="mt-3 inline-flex text-sm font-semibold text-primary" suppressHydrationWarning>
+          {t("signin")}
         </Link>
       </Card>
     );
@@ -61,10 +64,8 @@ export default function AccountCouponsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="section-title text-3xl font-bold">My coupons</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Rewards unlocked from your order history. Apply a code at cart or checkout.
-        </p>
+        <h1 className="section-title text-3xl font-bold" suppressHydrationWarning>{t("couponsTitle")}</h1>
+        <p className="mt-1 text-sm text-text-muted" suppressHydrationWarning>{t("couponsSubtitle")}</p>
       </div>
 
       {loading ? (
@@ -72,14 +73,12 @@ export default function AccountCouponsPage() {
       ) : (
         <>
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold">Available ({available.length})</h2>
+            <h2 className="text-lg font-semibold" suppressHydrationWarning>{t("couponsAvailable", { count: available.length })}</h2>
             {available.length === 0 ? (
               <Card>
-                <p className="text-sm text-text-muted">
-                  Place more orders to unlock loyalty coupons. Rewards appear here automatically.
-                </p>
-                <Link href="/products" className="mt-3 inline-flex text-sm font-semibold text-primary">
-                  Browse products
+                <p className="text-sm text-text-muted" suppressHydrationWarning>{t("couponsUnlockHint")}</p>
+                <Link href="/products" className="mt-3 inline-flex text-sm font-semibold text-primary" suppressHydrationWarning>
+                  {t("browseProducts")}
                 </Link>
               </Card>
             ) : (
@@ -91,7 +90,7 @@ export default function AccountCouponsPage() {
                       <p className="mt-1 text-sm text-text-muted">{coupon.description}</p>
                       <p className="mt-2 text-sm font-medium text-primary">{coupon.discountLabel}</p>
                       <p className="mt-1 text-xs text-text-muted">
-                        Min. order ${coupon.minOrderAmount.toFixed(2)} · Expires {formatExpiry(coupon.expiresAt)}
+                        {t("minOrder")} ${coupon.minOrderAmount.toFixed(2)} · {t("expires")} {formatExpiry(coupon.expiresAt)}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -99,7 +98,7 @@ export default function AccountCouponsPage() {
                         {coupon.code}
                       </code>
                       <Button type="button" size="sm" variant="outline" onClick={() => void copyCode(coupon.code)}>
-                        {copied === coupon.code ? "Copied" : "Copy code"}
+                        {copied === coupon.code ? t("copied") : t("copyCode")}
                       </Button>
                     </div>
                   </div>
@@ -110,11 +109,11 @@ export default function AccountCouponsPage() {
 
           {used.length > 0 ? (
             <section className="space-y-3">
-              <h2 className="text-lg font-semibold text-text-muted">Used</h2>
+              <h2 className="text-lg font-semibold text-text-muted" suppressHydrationWarning>{t("used")}</h2>
               {used.map((coupon) => (
                 <Card key={coupon.id} className="opacity-70">
                   <p className="font-semibold">{coupon.title}</p>
-                  <p className="mt-1 text-xs text-text-muted">{coupon.code} · Used</p>
+                  <p className="mt-1 text-xs text-text-muted">{coupon.code} · {t("usedLabel")}</p>
                 </Card>
               ))}
             </section>
@@ -122,7 +121,7 @@ export default function AccountCouponsPage() {
 
           {expired.length > 0 ? (
             <section className="space-y-3">
-              <h2 className="text-lg font-semibold text-text-muted">Expired</h2>
+              <h2 className="text-lg font-semibold text-text-muted" suppressHydrationWarning>{t("expired")}</h2>
               {expired.map((coupon) => (
                 <Card key={coupon.id} className="opacity-60">
                   <p className="font-semibold">{coupon.title}</p>

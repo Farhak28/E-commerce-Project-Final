@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +13,7 @@ namespace ECommerce.Services.Specifications.OrderSpecifications
             : base(O => true)
         {
             AddInclude(X => X.DeliveryMethod);
+            AddInclude(X => X.DeliveryTimeSlot);
             AddInclude(X => X.Items);
             AddOrderByDescending(X => X.OrderDate);
         }
@@ -21,6 +22,7 @@ namespace ECommerce.Services.Specifications.OrderSpecifications
             : base(O => O.UserEmail == email)
         {
             AddInclude(X => X.DeliveryMethod);
+            AddInclude(X => X.DeliveryTimeSlot);
             AddInclude(X => X.Items);
             AddOrderByDescending(X => X.OrderDate);
         }
@@ -29,6 +31,7 @@ namespace ECommerce.Services.Specifications.OrderSpecifications
             : base(O => O.UserEmail == email && O.Id == Id)
         {
             AddInclude(O => O.DeliveryMethod);
+            AddInclude(O => O.DeliveryTimeSlot);
             AddInclude(O => O.Items);
         }
     }

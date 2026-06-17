@@ -30,6 +30,17 @@ export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function getClientLanguage(): "en" | "ar" {
+  if (typeof window === "undefined") return "en";
+  return localStorage.getItem("language") === "ar" ? "ar" : "en";
+}
+
+function readServerLanguageCookie(cookieHeader?: string | null): "en" | "ar" {
+  if (!cookieHeader) return "en";
+  const match = cookieHeader.match(/(?:^|;\s*)language=(ar|en)(?:;|$)/);
+  return match?.[1] === "ar" ? "ar" : "en";
+}
+
 export function setAuthToken(token: string | null): void {
   if (typeof window === "undefined") return;
   if (token) localStorage.setItem(TOKEN_KEY, token);
@@ -85,6 +96,9 @@ export async function apiClient<T>(
     const token = getAuthToken();
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", getClientLanguage());
+  }
 
   const res = await fetch(buildUrl(path, params), { ...init, headers });
 
@@ -108,9 +122,23 @@ export async function serverApiClient<T>(
   path: string,
   params?: Record<string, string | number | undefined | null>,
   revalidate = 60,
+  language?: "en" | "ar",
 ): Promise<T> {
   const url = buildUrl(path, params);
-  const res = await fetch(url, { next: { revalidate } });
+  let lang = language;
+  if (!lang) {
+    try {
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      lang = readServerLanguageCookie(cookieStore.toString());
+    } catch {
+      lang = "en";
+    }
+  }
+  const res = await fetch(url, {
+    next: { revalidate },
+    headers: { "Accept-Language": lang },
+  });
   if (!res.ok) {
     throw new ApiError(res.status, await parseError(res));
   }
@@ -124,6 +152,8 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const headers = new Headers();
   const token = getAuthToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
+  const lang = typeof window !== "undefined" ? localStorage.getItem("language") : null;
+  if (lang === "ar" || lang === "en") headers.set("Accept-Language", lang);
 
   const form = new FormData();
   form.append("file", file);

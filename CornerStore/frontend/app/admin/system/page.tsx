@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import {
   AdminLoadingGrid,
   AdminPageHeader,
-  AdminStatCard,
   HealthPill,
 } from "@/components/admin/admin-ui";
 import { Card } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import { getAdminAiOverview, getAdminKnowledgeStats, getAdminSystemHealth } from "@/lib/services/admin-ai";
 import type { AdminAiOverviewDTO, KnowledgeStatsDTO, SystemHealthDTO } from "@/lib/types";
 
 export default function AdminSystemPage() {
+  const { t } = useAdminI18n();
   const [health, setHealth] = useState<SystemHealthDTO | null>(null);
   const [ai, setAi] = useState<AdminAiOverviewDTO | null>(null);
   const [knowledge, setKnowledge] = useState<KnowledgeStatsDTO | null>(null);
@@ -34,20 +35,17 @@ export default function AdminSystemPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="System Health"
-        description="Monitor API, database, Gemini, and vector indexing pipeline status."
-      />
+      <AdminPageHeader title={t("systemTitle")} description={t("systemDesc")} />
 
       {loading ? (
         <AdminLoadingGrid count={4} />
       ) : (
         <>
           <div className="flex flex-wrap gap-2">
-            <HealthPill ok={!!health?.apiHealthy} label="API" />
-            <HealthPill ok={!!health?.databaseHealthy} label="Database" />
-            <HealthPill ok={!!health?.geminiConfigured} label="Gemini" />
-            <HealthPill ok={!!health?.vectorStoreHealthy} label="Vector store" />
+            <HealthPill ok={!!health?.apiHealthy} label={t("healthApi")} />
+            <HealthPill ok={!!health?.databaseHealthy} label={t("healthDatabase")} />
+            <HealthPill ok={!!health?.geminiConfigured} label={t("healthGemini")} />
+            <HealthPill ok={!!health?.vectorStoreHealthy} label={t("healthVectorStore")} />
           </div>
 
           {health?.message ? (
@@ -58,26 +56,24 @@ export default function AdminSystemPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="space-y-3">
-              <h2 className="font-semibold">AI configuration</h2>
-              <p className="text-sm"><span className="text-text-muted">Provider:</span> {ai?.geminiProvider ?? "—"}</p>
-              <p className="text-sm"><span className="text-text-muted">Model:</span> {health?.geminiModel ?? ai?.geminiModel ?? "—"}</p>
-              <p className="text-sm"><span className="text-text-muted">Vector store:</span> {health?.vectorStoreType ?? "—"}</p>
+              <h2 className="font-semibold">{t("aiConfiguration")}</h2>
+              <p className="text-sm"><span className="text-text-muted">{t("labelProvider")}</span> {ai?.geminiProvider ?? "—"}</p>
+              <p className="text-sm"><span className="text-text-muted">{t("labelModel")}</span> {health?.geminiModel ?? ai?.geminiModel ?? "—"}</p>
+              <p className="text-sm"><span className="text-text-muted">{t("labelVectorStore")}</span> {health?.vectorStoreType ?? "—"}</p>
             </Card>
             <Card className="space-y-3">
-              <h2 className="font-semibold">Knowledge index</h2>
-              <p className="text-sm"><span className="text-text-muted">Documents:</span> {knowledge?.documentCount ?? "—"}</p>
-              <p className="text-sm"><span className="text-text-muted">Chunks:</span> {knowledge?.chunkCount ?? "—"}</p>
+              <h2 className="font-semibold">{t("knowledgeIndex")}</h2>
+              <p className="text-sm"><span className="text-text-muted">{t("labelDocuments")}</span> {knowledge?.documentCount ?? "—"}</p>
+              <p className="text-sm"><span className="text-text-muted">{t("labelChunks")}</span> {knowledge?.chunkCount ?? "—"}</p>
             </Card>
             <Card className="space-y-3 md:col-span-2">
-              <h2 className="font-semibold">Order fulfillment worker</h2>
+              <h2 className="font-semibold">{t("fulfillmentWorker")}</h2>
               <p className="text-sm text-text-muted">
-                Background service auto-advances shipment stages for demo presentations. Configure via{" "}
-                <code className="rounded bg-surface-2 px-1">OrderFulfillment</code> in appsettings
-                (DemoAutoAdvance, StageIntervalMinutes, WorkerIntervalSeconds).
+                {t("fulfillmentWorkerConfigHintBefore")}
+                <code className="rounded bg-surface-2 px-1">OrderFulfillment</code>
+                {t("fulfillmentWorkerConfigHintAfter")}
               </p>
-              <p className="text-sm text-text-muted">
-                Admins can manually advance orders from the order detail page for live demos.
-              </p>
+              <p className="text-sm text-text-muted">{t("fulfillmentWorkerManualHint")}</p>
             </Card>
           </div>
         </>

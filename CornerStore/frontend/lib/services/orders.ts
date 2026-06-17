@@ -32,12 +32,11 @@ export async function getDeliveryQuote(
   deliveryMethodId: number,
   scheduledDeliveryAt?: string | null,
 ): Promise<DeliveryQuoteDTO> {
-  return apiClient<DeliveryQuoteDTO>("/Orders/deliveryQuote", {
-    skipAuth: true,
-    params: {
-      deliveryMethodId,
-      ...(scheduledDeliveryAt ? { scheduledDeliveryAt } : {}),
-    },
+  const { getDeliveryQuote: fetchQuote } = await import("@/lib/services/delivery");
+  return fetchQuote(deliveryMethodId, {
+    ...(scheduledDeliveryAt
+      ? { deliveryType: "Scheduled", scheduledDeliveryAt }
+      : { deliveryType: "Standard" }),
   });
 }
 

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ECommerce.Shared.DTOs.AIDTOs;
 using ECommerce.Shared.DTOs.ProductDTOs;
 
@@ -15,12 +16,37 @@ public sealed class VisualProductMatcher
         ["Smart Watches"] = ["smart watches", "smartwatch", "wearable", "watch", "watches", "fitness band"],
     };
 
+    private static readonly Regex IPhoneModelRegex = new(
+        @"iphone\s*(\d+)\s*(pro\s*max|pro|plus|mini|max)?",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled
+    );
+
     public VisualMatchResult Match(
         IReadOnlyList<ProductDTO> catalog,
         VisualProductAttributesDTO attributes,
         int maxResults = 8
     )
     {
+        if (!string.IsNullOrWhiteSpace(attributes.CatalogMatchName))
+        {
+            var catalogHit = catalog.FirstOrDefault(p =>
+                p.Name.Equals(attributes.CatalogMatchName, StringComparison.OrdinalIgnoreCase)
+                || p.Name.Contains(attributes.CatalogMatchName, StringComparison.OrdinalIgnoreCase));
+            if (catalogHit is not null)
+            {
+                var exact = new List<VisualProductMatchDTO> { ToMatch(catalogHit, 95, "exact") };
+                var others = catalog
+                    .Where(p => p.Id != catalogHit.Id)
+                    .Select(p => (Product: p, Score: ScoreProduct(p, attributes), Tier: ""))
+                    .Where(x => x.Score >= 40)
+                    .OrderByDescending(x => x.Score)
+                    .Take(maxResults - 1)
+                    .Select(x => ToMatch(x.Product, x.Score, x.Score >= 55 ? "similar" : "alternative"))
+                    .ToList();
+                return new VisualMatchResult(exact, others.Where(m => m.MatchTier == "similar").ToList(), others.Where(m => m.MatchTier == "alternative").ToList());
+            }
+        }
+
         var scored = catalog
             .Select(p => (Product: p, Score: ScoreProduct(p, attributes), Tier: ""))
             .Where(x => x.Score >= 25)
@@ -32,7 +58,7 @@ public sealed class VisualProductMatcher
             ))
             .ToList();
 
-        var exact = scored
+        var exactMatches = scored
             .Where(x => x.Tier == "exact")
             .Take(maxResults)
             .Select(x => ToMatch(x.Product, x.Score, x.Tier))
@@ -50,7 +76,7 @@ public sealed class VisualProductMatcher
             .Select(x => ToMatch(x.Product, x.Score, x.Tier))
             .ToList();
 
-        if (exact.Count == 0 && similar.Count == 0 && alternatives.Count == 0)
+        if (exactMatches.Count == 0 && similar.Count == 0 && alternatives.Count == 0)
         {
             alternatives = catalog
                 .OrderByDescending(p => p.AverageRating)
@@ -60,7 +86,7 @@ public sealed class VisualProductMatcher
                 .ToList();
         }
 
-        return new VisualMatchResult(exact, similar, alternatives);
+        return new VisualMatchResult(exactMatches, similar, alternatives);
     }
 
     private static int ScoreProduct(ProductDTO product, VisualProductAttributesDTO attrs)
@@ -69,22 +95,26 @@ public sealed class VisualProductMatcher
         var haystack = $"{product.Name} {product.Description} {product.ProductType} {product.ProductBrand}"
             .ToLowerInvariant();
 
-        if (!string.IsNullOrWhiteSpace(attrs.ProductName))
+        var detectedLabel = attrs.ProductName ?? attrs.ModelLine ?? "";
+        if (!string.IsNullOrWhiteSpace(detectedLabel))
         {
-            var name = attrs.ProductName.Trim();
-            if (product.Name.Contains(name, StringComparison.OrdinalIgnoreCase)
+            var name = detectedLabel.Trim();
+            if (product.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                || product.Name.Contains(name, StringComparison.OrdinalIgnoreCase)
                 || name.Contains(product.Name, StringComparison.OrdinalIgnoreCase))
             {
-                score = Math.Max(score, 92);
+                score = Math.Max(score, 95);
             }
             else
             {
                 var nameTokens = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 var tokenHits = nameTokens.Count(t => t.Length > 2 && haystack.Contains(t.ToLowerInvariant()));
                 if (tokenHits >= 2)
-                    score = Math.Max(score, 75 + tokenHits * 3);
+                    score = Math.Max(score, 70 + tokenHits * 3);
             }
         }
+
+        score += ScorePhoneGeneration(product.Name, attrs);
 
         if (!string.IsNullOrWhiteSpace(attrs.Brand)
             && product.ProductBrand.Contains(attrs.Brand, StringComparison.OrdinalIgnoreCase))
@@ -106,6 +136,12 @@ public sealed class VisualProductMatcher
                 score += 5;
         }
 
+        if (!string.IsNullOrWhiteSpace(attrs.ModelLine)
+            && haystack.Contains(attrs.ModelLine.Replace(" ", "").ToLowerInvariant()))
+        {
+            score += 15;
+        }
+
         if (!string.IsNullOrWhiteSpace(attrs.Color) && haystack.Contains(attrs.Color.ToLowerInvariant()))
             score += 8;
 
@@ -115,7 +151,53 @@ public sealed class VisualProductMatcher
         if (!string.IsNullOrWhiteSpace(attrs.Style) && haystack.Contains(attrs.Style.ToLowerInvariant()))
             score += 4;
 
-        return Math.Min(100, score);
+        return Math.Min(100, Math.Max(0, score));
+    }
+
+    private static int ScorePhoneGeneration(string productName, VisualProductAttributesDTO attrs)
+    {
+        var detectedKey = NormalizeIPhoneModel(attrs.ModelLine ?? attrs.ProductName);
+        var productKey = NormalizeIPhoneModel(productName);
+        if (detectedKey is null || productKey is null)
+            return 0;
+
+        if (detectedKey == productKey)
+            return 25;
+
+        var detectedGen = ExtractIPhoneGeneration(detectedKey);
+        var productGen = ExtractIPhoneGeneration(productKey);
+        if (detectedGen is null || productGen is null)
+            return 0;
+
+        var gap = Math.Abs(detectedGen.Value - productGen.Value);
+        return gap switch
+        {
+            0 => 20,
+            1 => 4,
+            _ => -30,
+        };
+    }
+
+    private static string? NormalizeIPhoneModel(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+
+        var match = IPhoneModelRegex.Match(text);
+        if (!match.Success)
+            return null;
+
+        var generation = match.Groups[1].Value;
+        var variant = match.Groups[2].Success
+            ? match.Groups[2].Value.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant()
+            : "";
+        return string.IsNullOrEmpty(variant) ? $"iphone-{generation}" : $"iphone-{generation}-{variant}";
+    }
+
+    private static int? ExtractIPhoneGeneration(string normalizedKey)
+    {
+        var parts = normalizedKey.Split('-', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2 && int.TryParse(parts[1], out var gen) ? gen : null;
     }
 
     private static string? ResolveCategory(string? category, string? productType)

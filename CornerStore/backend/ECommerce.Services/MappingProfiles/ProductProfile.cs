@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +16,8 @@ namespace ECommerce.Services.MappingProfiles
         {
             CreateMap<ProductBrand, BrandDTO>();
             CreateMap<Product, ProductDTO>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom<ProductLocalizedNameResolver>())
+                .ForMember(dest => dest.Description, opt => opt.MapFrom<ProductLocalizedDescriptionResolver>())
                 .ForMember(
                     dest => dest.ProductBrand,
                     opt => opt.MapFrom(src => src.ProductBrand.Name)

@@ -1,4 +1,5 @@
 using ECommerce.Domain.Entities.OrderModule;
+using ECommerce.Services.Localization;
 
 namespace ECommerce.Services;
 
@@ -16,18 +17,6 @@ internal static class FulfillmentLabels
             _ => 0,
         };
 
-    public static string Headline(FulfillmentStage stage) =>
-        stage switch
-        {
-            FulfillmentStage.Delivered => "Delivered",
-            FulfillmentStage.OutForDelivery => "Arriving today",
-            FulfillmentStage.Shipped => "On the way",
-            FulfillmentStage.Processing => "Preparing your order",
-            FulfillmentStage.Confirmed => "Order confirmed",
-            FulfillmentStage.OrderPlaced => "Order placed",
-            FulfillmentStage.Cancelled => "Cancelled",
-            FulfillmentStage.ReturnRequested => "Return in progress",
-            FulfillmentStage.Returned => "Returned",
-            _ => "Tracking",
-        };
+    public static string Headline(FulfillmentStage stage, string language = "en") =>
+        FulfillmentStrings.Headline(stage, language);
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -36,7 +36,17 @@ namespace ECommerce.Shared.DTOs.OrderDTOs
 
         public string TrackingHeadline { get; init; } = "Order placed";
 
+        public string DeliveryType { get; init; } = "Standard";
+
         public DateTimeOffset? ScheduledDeliveryAt { get; init; }
+
+        public string? ScheduledDeliveryDate { get; init; }
+
+        public int? DeliveryTimeSlotId { get; init; }
+
+        public string? DeliveryTimeSlotLabel { get; init; }
+
+        public DateTimeOffset? EstimatedDeliveryDate { get; init; }
 
         public DateTimeOffset? CancelledAt { get; init; }
 
@@ -47,6 +57,8 @@ namespace ECommerce.Shared.DTOs.OrderDTOs
         public bool CanCancel { get; init; }
 
         public bool CanReturn { get; init; }
+
+        public bool CanReview { get; init; }
 
         public bool CanSchedule { get; init; }
 

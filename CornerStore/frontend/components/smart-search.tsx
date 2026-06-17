@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui";
 import { getProducts } from "@/lib/services/products";
 import type { Product } from "@/lib/types";
 import { mapProductDTO } from "@/lib/utils/product";
+import { useI18n } from "@/lib/use-i18n";
 
 const RECENT_KEY = "corner_store_recent_searches";
 
@@ -26,6 +27,7 @@ function saveRecent(q: string) {
 }
 
 export function SmartSearch({ className = "" }: { className?: string }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -90,15 +92,16 @@ export function SmartSearch({ className = "" }: { className?: string }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") go(query);
           }}
-          placeholder="Search products, brands, categories…"
+          placeholder={t("searchProductsPlaceholder")}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted"
-          aria-label="Search products"
+          aria-label={t("searchProductsPlaceholder")}
+          suppressHydrationWarning
           aria-expanded={open}
           aria-controls="search-suggestions"
         />
         {query ? (
           <button type="button" className="text-xs text-text-muted hover:text-text" onClick={() => { setQuery(""); setResults([]); }}>
-            Clear
+            <span suppressHydrationWarning>{t("clear")}</span>
           </button>
         ) : null}
       </div>
@@ -138,15 +141,15 @@ export function SmartSearch({ className = "" }: { className?: string }) {
               ))}
               <li className="border-t border-border p-2">
                 <button type="button" className="w-full rounded-lg py-2 text-sm font-semibold text-primary hover:bg-primary/5" onClick={() => go(query)}>
-                  View all results for &ldquo;{query}&rdquo;
+                  <span suppressHydrationWarning>{t("viewAllResultsFor", { query })}</span>
                 </button>
               </li>
             </ul>
           ) : query.trim() ? (
-            <p className="p-4 text-sm text-text-muted">No products found. Try different keywords.</p>
+            <p className="p-4 text-sm text-text-muted" suppressHydrationWarning>{t("noProductsKeywords")}</p>
           ) : recent.length > 0 ? (
             <div className="p-3">
-              <p className="text-label mb-2 text-text-muted">Recent searches</p>
+              <p className="text-label mb-2 text-text-muted" suppressHydrationWarning>{t("recentSearches")}</p>
               <div className="flex flex-wrap gap-2">
                 {recent.map((r) => (
                   <button key={r} type="button" className="rounded-full bg-surface-2 px-3 py-1 text-xs hover:bg-primary/10" onClick={() => go(r)}>
@@ -156,7 +159,7 @@ export function SmartSearch({ className = "" }: { className?: string }) {
               </div>
             </div>
           ) : (
-            <p className="p-4 text-sm text-text-muted">Start typing to search the catalog instantly.</p>
+            <p className="p-4 text-sm text-text-muted" suppressHydrationWarning>{t("startTypingSearch")}</p>
           )}
         </div>
       ) : null}

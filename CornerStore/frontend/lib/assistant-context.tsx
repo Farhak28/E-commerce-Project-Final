@@ -188,13 +188,15 @@ function AssistantPanelContent({
         const reply: AssistantMessage = {
           role: "assistant",
           text: result.text.replace(/\*\*/g, ""),
-          visualSearch: {
-            exactMatchFound: result.exactMatchFound,
-            attributes: result.attributes,
-            exactMatches: result.exactMatches,
-            similarProducts: result.similarProducts,
-            alternatives: result.alternatives,
-          },
+          visualSearch: result.isPersonDetected
+            ? null
+            : {
+                exactMatchFound: result.exactMatchFound,
+                attributes: result.attributes,
+                exactMatches: result.exactMatches,
+                similarProducts: result.similarProducts,
+                alternatives: result.alternatives,
+              },
         };
         setMessages((m) => [...m, reply]);
       } catch {

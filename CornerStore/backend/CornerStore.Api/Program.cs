@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using ECommerce.API.CustomMiddlewares;
 using ECommerce.API.Extensions;
 using ECommerce.API.Factories;
@@ -14,11 +15,14 @@ using ECommerce.Services;
 using ECommerce.Services.Abstraction;
 using ECommerce.Services.Abstraction.AI;
 using ECommerce.Services.AI;
+using ECommerce.Services.Email;
 using ECommerce.Services.MappingProfiles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
@@ -35,7 +39,10 @@ namespace ECommerce.API
             #region Register DI Container
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -93,6 +100,9 @@ namespace ECommerce.API
 
             builder.Services.AddKeyedScoped<IDataIntializer, DataIntializer>("Default");
             builder.Services.AddKeyedScoped<IDataIntializer, IdentityDataIntializer>("Identity");
+
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<IRequestCultureAccessor, RequestCultureAccessor>();
 
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -163,10 +173,48 @@ namespace ECommerce.API
             builder.Services.Configure<OrderFulfillmentOptions>(
                 builder.Configuration.GetSection(OrderFulfillmentOptions.SectionName)
             );
+            builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+            builder.Services.PostConfigure<EmailOptions>(options =>
+            {
+                var env = builder.Environment;
+                var isDocker = env.IsEnvironment("Docker");
+                if (!env.IsDevelopment() && !isDocker)
+                    return;
+
+                if (options.IsLiveDelivery)
+                {
+                    options.Enabled = true;
+                    if (IsCaptureSmtpEndpoint(options))
+                    {
+                        options.SmtpHost = "smtp.gmail.com";
+                        options.SmtpPort = 587;
+                        options.UseSsl = true;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(options.FromAddress) && !string.IsNullOrWhiteSpace(options.Username))
+                        options.FromAddress = options.Username;
+
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(options.SmtpHost))
+                    options.SmtpHost = isDocker ? "mailpit" : "localhost";
+
+                if (options.SmtpPort is 0 or 587)
+                {
+                    options.SmtpPort = 1025;
+                    options.UseSsl = false;
+                }
+
+                if (!options.Enabled)
+                    options.Enabled = true;
+            });
+            builder.Services.AddScoped<IEmailService, SmtpEmailService>();
             builder.Services.AddScoped<IOrderFulfillmentService, OrderFulfillmentService>();
             builder.Services.AddHostedService<OrderFulfillmentBackgroundService>();
 
             builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IDeliverySchedulingService, DeliverySchedulingService>();
             builder.Services.AddScoped<IPaymentService, PaymentService>();
             builder.Services.AddScoped<IAdminService, AdminService>();
             builder.Services.AddScoped<IAdminAiService, AdminAiService>();
@@ -201,6 +249,8 @@ namespace ECommerce.API
 
 
             var app = builder.Build();
+
+            LogEmailConfiguration(app);
 
             await app.MigrateDataBaseAsync();
             await app.MigratIdentityeDataBaseAsync();
@@ -282,6 +332,43 @@ namespace ECommerce.API
             #endregion
 
             await app.RunAsync();
+        }
+
+        private static bool IsCaptureSmtpEndpoint(EmailOptions options) =>
+            options.SmtpPort == 1025
+            && (
+                string.Equals(options.SmtpHost, "mailpit", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(options.SmtpHost, "localhost", StringComparison.OrdinalIgnoreCase)
+            );
+
+        private static void LogEmailConfiguration(WebApplication app)
+        {
+            var options = app.Services.GetRequiredService<IOptions<EmailOptions>>().Value;
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+            if (!options.Enabled)
+            {
+                logger.LogWarning(
+                    "Customer emails are DISABLED. Set Email__Enabled=true to send order updates."
+                );
+                return;
+            }
+
+            if (options.IsLiveDelivery)
+            {
+                logger.LogInformation(
+                    "Customer emails: LIVE delivery via {Host}:{Port} (from {From})",
+                    options.SmtpHost,
+                    options.SmtpPort,
+                    options.FromAddress
+                );
+                return;
+            }
+
+            logger.LogInformation(
+                "Customer emails: CAPTURED locally (not sent to real inboxes). Open {Inbox} to read them. Set EMAIL_USERNAME + EMAIL_PASSWORD for Gmail delivery.",
+                options.CaptureInboxUrl
+            );
         }
     }
 }

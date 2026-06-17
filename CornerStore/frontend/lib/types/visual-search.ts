@@ -11,6 +11,9 @@ export type VisualProductAttributes = {
   features: string[];
   keywords: string[];
   confidence: number;
+  subjectType?: string | null;
+  modelLine?: string | null;
+  catalogMatchName?: string | null;
 };
 
 export type VisualProductMatch = {
@@ -27,6 +30,7 @@ export type VisualSearchResponse = {
   similarProducts: VisualProductMatch[];
   alternatives: VisualProductMatch[];
   sessionId?: string | null;
+  isPersonDetected?: boolean;
 };
 
 export type VisualSearchAnalytics = {

@@ -9,11 +9,13 @@ import {
   HealthPill,
 } from "@/components/admin/admin-ui";
 import { Button, Card } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import { getAdminAiOverview } from "@/lib/services/admin-ai";
 import { getAdminKnowledgeStats } from "@/lib/services/admin-ai";
 import type { AdminAiOverviewDTO, KnowledgeStatsDTO } from "@/lib/types";
 
 export default function AdminAiOverviewPage() {
+  const { t } = useAdminI18n();
   const [ai, setAi] = useState<AdminAiOverviewDTO | null>(null);
   const [knowledge, setKnowledge] = useState<KnowledgeStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,31 +31,29 @@ export default function AdminAiOverviewPage() {
       .catch((e) => {
         setAi(null);
         setKnowledge(null);
-        setError(e instanceof Error ? e.message : "Failed to load AI overview");
+        setError(e instanceof Error ? e.message : t("failedToLoadAiOverview"));
       })
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="AI Management"
-        description="Monitor the shopping assistant, knowledge base, and Gemini integration."
+        title={t("aiManagementTitle")}
+        description={t("aiManagementDescGemini")}
         actions={
           <Link href="/admin/ai/knowledge">
-            <Button type="button">Manage knowledge</Button>
+            <Button type="button">{t("manageKnowledge")}</Button>
           </Link>
         }
       />
 
       {error ? (
         <Card className="border-accent/40 bg-accent/5">
-          <p className="text-sm font-semibold text-accent">Could not load AI data</p>
+          <p className="text-sm font-semibold text-accent">{t("couldNotLoadAi")}</p>
           <p className="mt-1 text-sm text-text-muted">{error}</p>
-          <p className="mt-2 text-xs text-text-muted">
-            Sign in as Admin/SuperAdmin, ensure the API is running, and apply database migrations
-            (AI tables: KnowledgeDocuments, KnowledgeChunks, AssistantInteractionLogs).
-          </p>
+          <p className="mt-2 text-xs text-text-muted">{t("aiMigrationHint")}</p>
         </Card>
       ) : null}
 
@@ -62,26 +62,36 @@ export default function AdminAiOverviewPage() {
       ) : !error ? (
         <>
           <div className="flex flex-wrap gap-2">
-            <HealthPill ok={!!ai?.geminiConfigured} label={ai?.geminiConfigured ? "Gemini connected" : "Gemini not configured"} />
-            <HealthPill ok={(knowledge?.documentCount ?? 0) > 0} label={`${knowledge?.documentCount ?? 0} knowledge docs`} />
+            <HealthPill
+              ok={!!ai?.geminiConfigured}
+              label={ai?.geminiConfigured ? t("geminiConnected") : t("geminiNotConfigured")}
+            />
+            <HealthPill
+              ok={(knowledge?.documentCount ?? 0) > 0}
+              label={t("knowledgeDocsCount", { count: knowledge?.documentCount ?? 0 })}
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <AdminStatCard label="Total conversations" value={ai?.totalConversations ?? "—"} hint={`${ai?.conversationsToday ?? 0} today`} />
-            <AdminStatCard label="Unique sessions" value={ai?.uniqueSessions ?? "—"} />
-            <AdminStatCard label="Avg latency" value={ai ? `${Math.round(ai.averageLatencyMs)} ms` : "—"} />
-            <AdminStatCard label="Knowledge documents" value={knowledge?.documentCount ?? "—"} />
-            <AdminStatCard label="Indexed chunks" value={knowledge?.chunkCount ?? "—"} />
-            <AdminStatCard label="Model" value={ai?.geminiModel ?? "—"} hint={ai?.geminiProvider ?? undefined} />
+            <AdminStatCard
+              label={t("statTotalConversations")}
+              value={ai?.totalConversations ?? "—"}
+              hint={t("hintToday", { count: ai?.conversationsToday ?? 0 })}
+            />
+            <AdminStatCard label={t("statUniqueSessions")} value={ai?.uniqueSessions ?? "—"} />
+            <AdminStatCard label={t("statAvgLatency")} value={ai ? `${Math.round(ai.averageLatencyMs)} ms` : "—"} />
+            <AdminStatCard label={t("statKnowledgeDocuments")} value={knowledge?.documentCount ?? "—"} />
+            <AdminStatCard label={t("statIndexedChunks")} value={knowledge?.chunkCount ?? "—"} />
+            <AdminStatCard label={t("statModel")} value={ai?.geminiModel ?? "—"} hint={ai?.geminiProvider ?? undefined} />
           </div>
 
           <Card>
-            <h2 className="font-semibold">Quick links</h2>
+            <h2 className="font-semibold">{t("quickLinks")}</h2>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Link href="/admin/ai/knowledge" className="text-sm font-semibold text-primary">Knowledge Base →</Link>
-              <Link href="/admin/ai/analytics" className="text-sm font-semibold text-primary">Chat Analytics →</Link>
-              <Link href="/admin/ai/logs" className="text-sm font-semibold text-primary">Conversation Logs →</Link>
-              <Link href="/admin/system" className="text-sm font-semibold text-primary">System Health →</Link>
+              <Link href="/admin/ai/knowledge" className="text-sm font-semibold text-primary">{t("quickKnowledgeLink")}</Link>
+              <Link href="/admin/ai/analytics" className="text-sm font-semibold text-primary">{t("quickChatAnalyticsLink")}</Link>
+              <Link href="/admin/ai/logs" className="text-sm font-semibold text-primary">{t("quickLogsLink")}</Link>
+              <Link href="/admin/system" className="text-sm font-semibold text-primary">{t("quickSystemLink")}</Link>
             </div>
           </Card>
         </>

@@ -15,12 +15,19 @@ public sealed class CouponService : ICouponService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBasketRepository _basketRepository;
     private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
 
-    public CouponService(IUnitOfWork unitOfWork, IBasketRepository basketRepository, IMapper mapper)
+    public CouponService(
+        IUnitOfWork unitOfWork,
+        IBasketRepository basketRepository,
+        IMapper mapper,
+        INotificationService notificationService
+    )
     {
         _unitOfWork = unitOfWork;
         _basketRepository = basketRepository;
         _mapper = mapper;
+        _notificationService = notificationService;
     }
 
     public async Task<IReadOnlyList<UserCouponDTO>> SyncAndGetCouponsAsync(
@@ -163,6 +170,7 @@ public sealed class CouponService : ICouponService
             .ToDictionary(c => c.RewardKey, StringComparer.OrdinalIgnoreCase);
 
         var changed = false;
+        var newlyIssued = new List<UserCoupon>();
         foreach (var template in CouponRewardCatalog.Templates)
         {
             if (!template.Qualifies(stats))
@@ -186,11 +194,23 @@ public sealed class CouponService : ICouponService
             };
 
             await repo.AddAsync(coupon);
+            newlyIssued.Add(coupon);
             changed = true;
         }
 
         if (changed)
             await _unitOfWork.SaveChangesAsync();
+
+        foreach (var coupon in newlyIssued)
+        {
+            await _notificationService.CreateForUserAsync(
+                userEmail,
+                $"Reward unlocked: {coupon.Title}",
+                $"{coupon.Description} Use code {coupon.Code} at checkout (expires {coupon.ExpiresAt:MMM d, yyyy}).",
+                "rewards",
+                CustomerEmailTrigger.LoyaltyRewardUnlocked
+            );
+        }
     }
 
     private async Task<PurchaseStats> BuildPurchaseStatsAsync(string userEmail, CancellationToken ct)

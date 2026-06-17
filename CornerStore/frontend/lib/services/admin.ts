@@ -122,6 +122,27 @@ export async function getAdminCouponsSummary(): Promise<AdminCouponsSummaryDTO> 
   return apiClient<AdminCouponsSummaryDTO>("/Admin/coupons/summary");
 }
 
+export async function getAdminReturns(
+  params: AdminListQueryParams & { status?: string } = {},
+): Promise<AdminPagedResult<OrderToReturnDTO>> {
+  return apiClient<AdminPagedResult<OrderToReturnDTO>>("/Admin/returns", {
+    params: {
+      search: params.search,
+      status: params.status,
+      page: params.page,
+      pageSize: params.pageSize,
+    },
+  });
+}
+
+export async function approveAdminReturn(orderId: string): Promise<OrderToReturnDTO> {
+  return apiClient<OrderToReturnDTO>(`/Admin/returns/${orderId}/approve`, { method: "POST" });
+}
+
+export async function rejectAdminReturn(orderId: string): Promise<OrderToReturnDTO> {
+  return apiClient<OrderToReturnDTO>(`/Admin/returns/${orderId}/reject`, { method: "POST" });
+}
+
 export async function getAdminReviews(
   params: AdminListQueryParams = {},
 ): Promise<AdminPagedResult<AdminReviewDTO>> {

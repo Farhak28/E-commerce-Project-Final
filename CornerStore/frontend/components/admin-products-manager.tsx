@@ -16,6 +16,7 @@ import type { BrandDTO, TypeDTO } from "@/lib/types";
 import { normalizePictureUrlForStorage, resolvePictureUrl } from "@/lib/utils/images";
 import { mapProductDTO } from "@/lib/utils/product";
 import type { Product } from "@/lib/types";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 
 type ProductFormState = {
   name: string;
@@ -52,6 +53,7 @@ function toForm(product: Product, brands: BrandDTO[], types: TypeDTO[]): Product
 }
 
 export function AdminProductsManager() {
+  const { t } = useAdminI18n();
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<BrandDTO[]>([]);
   const [types, setTypes] = useState<TypeDTO[]>([]);
@@ -124,7 +126,7 @@ export function AdminProductsManager() {
       const result = await uploadProductImage(file);
       setForm((prev) => ({ ...prev, pictureUrl: result.pictureUrl }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Image upload failed.");
+      setError(e instanceof Error ? e.message : t("errImageUpload"));
     } finally {
       setUploading(false);
     }
@@ -146,7 +148,7 @@ export function AdminProductsManager() {
     };
 
     if (!payload.name || !payload.description || !payload.pictureUrl || !payload.price) {
-      setError("Please fill in all required fields and add a product image.");
+      setError(t("errRequiredFields"));
       setSaving(false);
       return;
     }
@@ -160,21 +162,21 @@ export function AdminProductsManager() {
       closeForm();
       await load(page, appliedSearch);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save product.");
+      setError(e instanceof Error ? e.message : t("errSaveProduct"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    if (!window.confirm(t("confirmDeleteProduct", { name }))) return;
     setError(null);
     try {
       await deleteAdminProduct(id);
       if (editingId === id) closeForm();
       await load(page, appliedSearch);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete product.");
+      setError(e instanceof Error ? e.message : t("errDeleteProduct"));
     }
   };
 
@@ -189,18 +191,18 @@ export function AdminProductsManager() {
           setPage(1);
           setAppliedSearch(search);
         }}
-        placeholder="Search products…"
+        placeholder={t("searchProductsPlaceholder")}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           {!loading ? (
             <p className="text-sm text-text-muted">
-              {totalCount} product{totalCount === 1 ? "" : "s"} total
+              {totalCount === 1 ? t("productsCount", { count: totalCount }) : t("productsCountPlural", { count: totalCount })}
             </p>
           ) : null}
         </div>
         <Button type="button" onClick={openCreate}>
-          Add product
+          {t("addProduct")}
         </Button>
       </div>
 
@@ -210,12 +212,12 @@ export function AdminProductsManager() {
         <Card>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <h2 className="text-lg font-semibold">
-              {editingId != null ? "Edit product" : "New product"}
+              {editingId != null ? t("editProduct") : t("newProduct")}
             </h2>
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-1 text-sm">
-                <span className="text-text-muted">Name</span>
+                <span className="text-text-muted">{t("labelName")}</span>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
@@ -223,7 +225,7 @@ export function AdminProductsManager() {
                 />
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-text-muted">Price</span>
+                <span className="text-text-muted">{t("colPrice")}</span>
                 <Input
                   type="number"
                   min="0.01"
@@ -234,7 +236,7 @@ export function AdminProductsManager() {
                 />
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-text-muted">Stock quantity</span>
+                <span className="text-text-muted">{t("labelStockQuantity")}</span>
                 <Input
                   type="number"
                   min="0"
@@ -244,7 +246,7 @@ export function AdminProductsManager() {
                 />
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-text-muted">Brand</span>
+                <span className="text-text-muted">{t("labelBrand")}</span>
                 <select
                   className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
                   value={form.productBrandId}
@@ -259,7 +261,7 @@ export function AdminProductsManager() {
                 </select>
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-text-muted">Category</span>
+                <span className="text-text-muted">{t("colCategory")}</span>
                 <select
                   className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
                   value={form.productTypeId}
@@ -276,7 +278,7 @@ export function AdminProductsManager() {
             </div>
 
             <label className="block space-y-1 text-sm">
-              <span className="text-text-muted">Description</span>
+              <span className="text-text-muted">{t("labelDescription")}</span>
               <textarea
                 className="min-h-24 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.description}
@@ -286,7 +288,7 @@ export function AdminProductsManager() {
             </label>
 
             <div className="space-y-3 rounded-xl border border-border bg-surface-2 p-4">
-              <p className="text-sm font-semibold">Product image</p>
+              <p className="text-sm font-semibold">{t("productImage")}</p>
               <div className="flex flex-wrap items-center gap-3">
                 <input
                   ref={fileInputRef}
@@ -305,29 +307,29 @@ export function AdminProductsManager() {
                   disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {uploading ? "Uploading…" : "Upload image"}
+                  {uploading ? t("uploading") : t("uploadImage")}
                 </Button>
-                <span className="text-xs text-text-muted">or paste an image URL</span>
+                <span className="text-xs text-text-muted">{t("orPasteImageUrl")}</span>
               </div>
               <Input
-                placeholder="https://… or /images/products/…"
+                placeholder={t("imageUrlPlaceholder")}
                 value={form.pictureUrl}
                 onChange={(e) => setForm((p) => ({ ...p, pictureUrl: e.target.value }))}
                 required
               />
               {previewUrl ? (
                 <div className="relative h-40 w-full max-w-xs overflow-hidden rounded-xl border border-border">
-                  <ProductImage src={previewUrl} alt="Preview" fill sizes="320px" className="object-cover" />
+                  <ProductImage src={previewUrl} alt={t("preview")} fill sizes="320px" className="object-cover" />
                 </div>
               ) : null}
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving || uploading}>
-                {saving ? "Saving…" : editingId != null ? "Update product" : "Create product"}
+                {saving ? t("saving") : editingId != null ? t("updateProduct") : t("createProduct")}
               </Button>
               <Button type="button" variant="ghost" onClick={closeForm}>
-                Cancel
+                {t("cancel")}
               </Button>
             </div>
           </form>
@@ -335,7 +337,7 @@ export function AdminProductsManager() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-text-muted">Loading products…</p>
+        <p className="text-sm text-text-muted">{t("loadingProducts")}</p>
       ) : (
         <div className="space-y-3">
           {products.map((product) => (
@@ -357,15 +359,15 @@ export function AdminProductsManager() {
                       {product.productType} — {product.productBrand}
                     </p>
                     <p className="text-sm font-semibold text-primary">${product.price}</p>
-                    <p className="text-xs text-text-muted">Stock: {product.stock}</p>
+                    <p className="text-xs text-text-muted">{t("stockLabel")} {product.stock}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="secondary" onClick={() => openEdit(product)}>
-                    Edit
+                    {t("edit")}
                   </Button>
                   <Button type="button" variant="ghost" onClick={() => void handleDelete(product.id, product.name)}>
-                    Delete
+                    {t("delete")}
                   </Button>
                 </div>
               </div>

@@ -28,6 +28,8 @@ namespace ECommerce.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IOrderService _orderService;
+        private readonly IOrderFulfillmentService _fulfillment;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly StoreDbContext _db;
         private readonly IAuditLogService _auditLog;
@@ -36,6 +38,8 @@ namespace ECommerce.Services
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IOrderService orderService,
+            IOrderFulfillmentService fulfillment,
+            INotificationService notificationService,
             IUnitOfWork unitOfWork,
             StoreDbContext db,
             IAuditLogService auditLog
@@ -44,6 +48,8 @@ namespace ECommerce.Services
             _userManager = userManager;
             _roleManager = roleManager;
             _orderService = orderService;
+            _fulfillment = fulfillment;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _db = db;
             _auditLog = auditLog;
@@ -86,6 +92,7 @@ namespace ECommerce.Services
             var brandsWithUrl = await _db.ProductBrands.CountAsync(b =>
                 b.OfficialWebsiteUrl != null && b.OfficialWebsiteUrl != ""
             );
+            var pendingReturns = orders.Count(o => o.Status == OrderStatus.ReturnRequested);
 
             return Result<AdminStatsDTO>.Ok(
                 new AdminStatsDTO(
@@ -102,7 +109,8 @@ namespace ECommerce.Services
                     redeemedCoupons,
                     totalDiscounts,
                     reviewsCount,
-                    brandsWithUrl
+                    brandsWithUrl,
+                    pendingReturns
                 )
             );
         }
@@ -262,13 +270,118 @@ namespace ECommerce.Services
 
         public async Task<Result<OrderToReturnDTO>> GetOrderByIdAsync(Guid id)
         {
-            var spec = new OrderSpecification();
-            var order = (await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(spec)).FirstOrDefault(o =>
-                o.Id == id
-            );
+            var order = await GetOrderEntityByIdAsync(id);
 
             if (order is null)
                 return Error.NotFound("Order.NotFound", $"No order found with Id:{id}");
+
+            return await _orderService.GetOrderByIdAsync(order.Id, order.UserEmail);
+        }
+
+        public async Task<Result<AdminPagedResult<OrderToReturnDTO>>> GetReturnsPagedAsync(
+            AdminListQueryParams queryParams,
+            string? status = null
+        )
+        {
+            var spec = new OrderSpecification();
+            var orders = await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(spec);
+            var filtered = orders.Where(o =>
+                o.Status is OrderStatus.ReturnRequested or OrderStatus.Returned
+            );
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                filtered = filtered.Where(o =>
+                    o.Status.ToString().Equals(status, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(queryParams.Search))
+            {
+                var term = queryParams.Search.Trim();
+                filtered = filtered.Where(o =>
+                    o.UserEmail.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || o.Id.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || (o.ReturnReason != null && o.ReturnReason.Contains(term, StringComparison.OrdinalIgnoreCase))
+                );
+            }
+
+            var list = filtered.OrderByDescending(o => o.ReturnRequestedAt ?? o.OrderDate).ToList();
+            var page = Math.Max(1, queryParams.Page);
+            var pageSize = Math.Clamp(queryParams.PageSize, 1, 100);
+            var slice = list.Skip((page - 1) * pageSize).Take(pageSize);
+
+            var mappedResults = new List<OrderToReturnDTO>();
+            foreach (var order in slice)
+            {
+                var orderResult = await _orderService.GetOrderByIdAsync(order.Id, order.UserEmail);
+                if (orderResult.IsSuccess)
+                    mappedResults.Add(orderResult.Value);
+            }
+
+            return Result<AdminPagedResult<OrderToReturnDTO>>.Ok(
+                new AdminPagedResult<OrderToReturnDTO>(mappedResults, list.Count, page, pageSize)
+            );
+        }
+
+        public async Task<Result<OrderToReturnDTO>> ApproveReturnAsync(Guid orderId)
+        {
+            var order = await GetOrderEntityByIdAsync(orderId);
+            if (order is null)
+                return Error.NotFound("Order.NotFound", $"No order found with Id:{orderId}");
+
+            if (order.Status != OrderStatus.ReturnRequested)
+                return Error.Validation("Return.NotPending", "Only pending return requests can be approved.");
+
+            order.Status = OrderStatus.Returned;
+            _fulfillment.MarkReturned(order);
+
+            if (order.StockDeducted)
+            {
+                await RestoreStockFromOrderItemsAsync(order.Items);
+                order.StockDeducted = false;
+            }
+
+            _unitOfWork.GetRepository<Order, Guid>().Update(order);
+            if (await _unitOfWork.SaveChangesAsync() <= 0)
+                return Error.Faliure("Return.ApproveFailed", "Could not approve the return.");
+
+            await _notificationService.CreateForUserAsync(
+                order.UserEmail,
+                "Return approved",
+                $"Your return for order #{order.Id.ToString()[..8]} was approved. Refund processing may take a few business days.",
+                "orders",
+                CustomerEmailTrigger.ReturnApproved
+            );
+
+            return await _orderService.GetOrderByIdAsync(order.Id, order.UserEmail);
+        }
+
+        public async Task<Result<OrderToReturnDTO>> RejectReturnAsync(Guid orderId)
+        {
+            var order = await GetOrderEntityByIdAsync(orderId);
+            if (order is null)
+                return Error.NotFound("Order.NotFound", $"No order found with Id:{orderId}");
+
+            if (order.Status != OrderStatus.ReturnRequested)
+                return Error.Validation("Return.NotPending", "Only pending return requests can be rejected.");
+
+            order.Status = OrderStatus.PaymentReceived;
+            order.ReturnReason = null;
+            order.ReturnRequestedAt = null;
+            order.FulfillmentStage = FulfillmentStage.Delivered;
+
+            _unitOfWork.GetRepository<Order, Guid>().Update(order);
+            if (await _unitOfWork.SaveChangesAsync() <= 0)
+                return Error.Faliure("Return.RejectFailed", "Could not reject the return.");
+
+            await _notificationService.CreateForUserAsync(
+                order.UserEmail,
+                "Return not approved",
+                $"We could not approve the return for order #{order.Id.ToString()[..8]}. Contact support if you have questions.",
+                "orders",
+                CustomerEmailTrigger.ReturnRejected
+            );
 
             return await _orderService.GetOrderByIdAsync(order.Id, order.UserEmail);
         }
@@ -545,6 +658,31 @@ namespace ECommerce.Services
             var normalized = email.Trim().ToLowerInvariant();
             var atIndex = normalized.IndexOf('@');
             return atIndex > 0 ? normalized[..atIndex] : normalized;
+        }
+
+        private async Task<Order?> GetOrderEntityByIdAsync(Guid id)
+        {
+            var spec = new OrderSpecification();
+            return (await _unitOfWork.GetRepository<Order, Guid>().GetAllAsync(spec)).FirstOrDefault(o =>
+                o.Id == id
+            );
+        }
+
+        private async Task RestoreStockFromOrderItemsAsync(ICollection<OrderItem> items)
+        {
+            if (items is null || items.Count == 0)
+                return;
+
+            var productRepo = _unitOfWork.GetRepository<Product, int>();
+            foreach (var item in items)
+            {
+                var product = await productRepo.GetByIdAsync(item.Product.ProductId);
+                if (product is null)
+                    continue;
+
+                product.StockQuantity += item.Quantity;
+                productRepo.Update(product);
+            }
         }
     }
 }

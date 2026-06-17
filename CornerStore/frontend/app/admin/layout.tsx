@@ -6,11 +6,13 @@ import { useEffect, type ReactNode } from "react";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { Skeleton } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { isAdmin, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useAdminI18n();
   const isLoginHub = pathname === "/admin";
 
   useEffect(() => {
@@ -35,9 +37,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (!isAdmin) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-6 text-center">
-        <p className="text-text-muted">Admin sign-in required.</p>
+        <p className="text-text-muted">{t("adminSignInRequired")}</p>
         <Link href="/admin" className="mt-3 inline-block font-semibold text-primary">
-          Go to admin login
+          {t("goToAdminLogin")}
         </Link>
       </div>
     );

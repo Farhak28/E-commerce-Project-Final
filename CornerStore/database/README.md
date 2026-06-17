@@ -23,9 +23,18 @@ This folder holds **supporting** database artifacts for the graduation project. 
 
 ## Product images
 
-Seed data references `/images/products/...` under the API `wwwroot`. Place image files in:
+**Important:** The API reads `products.json` from this folder (`database/seed-data/`) on startup and **updates `PictureUrl` in the database** when product names match. Editing JSON alone is enough after you **restart the API** — you do not need to wipe the database.
+
+`PictureUrl` can be:
+
+- An external URL: `https://images.unsplash.com/...`
+- A local API path: `/images/products/iphone-14.jpg`
+
+For local files, place images in:
 
 `backend/CornerStore.Api/wwwroot/images/products/`
+
+Keep a copy in sync at `backend/ECommerce.Persistence/Data/DataSeed/JsonFiles/products.json` if you deploy with Docker (that file is baked into the image).
 
 ## Manual initialization
 

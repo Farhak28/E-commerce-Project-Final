@@ -1,3 +1,5 @@
+import { t, type Language } from "@/lib/i18n";
+
 export type OrderStatusKey =
   | "Pending"
   | "PaymentReceived"
@@ -13,47 +15,23 @@ export type OrderStatusMeta = {
   tone: "neutral" | "success" | "warning" | "danger";
 };
 
-const STATUS_META: Record<string, OrderStatusMeta> = {
-  Pending: {
-    label: "Awaiting payment",
-    description: "Your order is placed. Complete payment to confirm.",
-    tone: "warning",
-  },
-  PaymentReceived: {
-    label: "Order confirmed",
-    description: "Payment received. We're preparing your order.",
-    tone: "success",
-  },
-  PaymentFailed: {
-    label: "Payment failed",
-    description: "Payment did not go through. Try checkout again.",
-    tone: "danger",
-  },
-  Cancelled: {
-    label: "Cancelled",
-    description: "This order was cancelled.",
-    tone: "neutral",
-  },
-  ReturnRequested: {
-    label: "Return requested",
-    description: "We received your return request and will follow up.",
-    tone: "warning",
-  },
-  Returned: {
-    label: "Returned",
-    description: "This order has been returned.",
-    tone: "neutral",
-  },
-};
-
-export function inferPaymentMethodLabel(paymentIntentId: string): string {
-  if (paymentIntentId.startsWith("cod-")) return "Cash on delivery";
-  if (paymentIntentId.startsWith("instapay-")) return "InstaPay";
-  return "Card / wallet";
+export function inferPaymentMethodLabel(
+  paymentIntentId: string,
+  lang: Language = "en",
+): string {
+  if (paymentIntentId.startsWith("cod-")) return t("payCod", lang);
+  if (paymentIntentId.startsWith("instapay-")) return t("payInstaPay", lang);
+  return t("payCardWallet", lang);
 }
 
-export function isOfflinePaymentOrder(status: string, paymentMethod?: string | null, paymentIntentId?: string): boolean {
-  const label = paymentMethod ?? (paymentIntentId ? inferPaymentMethodLabel(paymentIntentId) : "");
+export function isOfflinePaymentOrder(
+  status: string,
+  paymentMethod?: string | null,
+  paymentIntentId?: string,
+  lang: Language = "en",
+): boolean {
+  const label =
+    paymentMethod ?? (paymentIntentId ? inferPaymentMethodLabel(paymentIntentId, lang) : "");
   const lower = label.toLowerCase();
   return status === "Pending" && (lower.includes("cash") || lower.includes("instapay"));
 }
@@ -62,24 +40,59 @@ export function getOrderStatusMeta(
   status: string,
   paymentMethod?: string | null,
   paymentIntentId?: string,
+  lang: Language = "en",
 ): OrderStatusMeta {
-  const pm = paymentMethod ?? (paymentIntentId ? inferPaymentMethodLabel(paymentIntentId) : null);
+  const pm =
+    paymentMethod ?? (paymentIntentId ? inferPaymentMethodLabel(paymentIntentId, lang) : null);
 
   if (status === "Pending" && pm) {
     const lower = pm.toLowerCase();
     if (lower.includes("cash on delivery") || lower.includes("instapay")) {
       return {
-        label: "Order made",
+        label: t("statusOrderMade", lang),
         description: lower.includes("instapay")
-          ? "Your order is placed. Complete InstaPay when ready."
-          : "Your order is placed. Pay cash on delivery when it arrives.",
+          ? t("statusInstaPayDesc", lang)
+          : t("statusCodDesc", lang),
         tone: "success",
       };
     }
   }
 
+  const map: Record<string, OrderStatusMeta> = {
+    Pending: {
+      label: t("statusAwaitingPayment", lang),
+      description: t("statusAwaitingPaymentDesc", lang),
+      tone: "warning",
+    },
+    PaymentReceived: {
+      label: t("statusOrderConfirmed", lang),
+      description: t("statusOrderConfirmedDesc", lang),
+      tone: "success",
+    },
+    PaymentFailed: {
+      label: t("statusPaymentFailed", lang),
+      description: t("statusPaymentFailedDesc", lang),
+      tone: "danger",
+    },
+    Cancelled: {
+      label: t("statusCancelled", lang),
+      description: t("statusCancelledDesc", lang),
+      tone: "neutral",
+    },
+    ReturnRequested: {
+      label: t("statusReturnRequested", lang),
+      description: t("statusReturnRequestedDesc", lang),
+      tone: "warning",
+    },
+    Returned: {
+      label: t("statusReturned", lang),
+      description: t("statusReturnedDesc", lang),
+      tone: "neutral",
+    },
+  };
+
   return (
-    STATUS_META[status] ?? {
+    map[status] ?? {
       label: status.replace(/([A-Z])/g, " $1").trim(),
       description: "",
       tone: "neutral" as const,
@@ -100,9 +113,9 @@ export function orderStatusBadgeClass(tone: OrderStatusMeta["tone"]): string {
   }
 }
 
-export function formatOrderDate(iso: string): string {
+export function formatOrderDate(iso: string, lang: Language = "en"): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(lang === "ar" ? "ar-EG" : "en-US", {
       dateStyle: "medium",
       timeStyle: "short",
     }).format(new Date(iso));
@@ -111,29 +124,33 @@ export function formatOrderDate(iso: string): string {
   }
 }
 
-export function formatScheduledDelivery(iso: string | null | undefined): string | null {
+export function formatScheduledDelivery(
+  iso: string | null | undefined,
+  lang: Language = "en",
+): string | null {
   if (!iso) return null;
-  return formatOrderDate(iso);
+  return formatOrderDate(iso, lang);
 }
 
-const FULFILLMENT_LABELS: Record<string, string> = {
-  OrderPlaced: "Order placed",
-  Confirmed: "Confirmed",
-  Processing: "Processing at warehouse",
-  Shipped: "Shipped",
-  OutForDelivery: "Out for delivery",
-  Delivered: "Delivered",
-  Cancelled: "Cancelled",
-  ReturnRequested: "Return requested",
-  Returned: "Returned",
+const FULFILLMENT_KEYS: Record<string, Parameters<typeof t>[0]> = {
+  OrderPlaced: "stageOrderPlaced",
+  Confirmed: "stageConfirmed",
+  Processing: "stageProcessing",
+  Shipped: "stageShipped",
+  OutForDelivery: "stageOutForDelivery",
+  Delivered: "stageDelivered",
+  Cancelled: "stageCancelled",
+  ReturnRequested: "stageReturnRequested",
+  Returned: "stageReturned",
 };
 
-export function formatFulfillmentStage(stage: string): string {
-  return FULFILLMENT_LABELS[stage] ?? stage.replace(/([A-Z])/g, " $1").trim();
+export function formatFulfillmentStage(stage: string, lang: Language = "en"): string {
+  const key = FULFILLMENT_KEYS[stage];
+  return key ? t(key, lang) : stage.replace(/([A-Z])/g, " $1").trim();
 }
 
-export function formatTrackingTimestamp(iso: string): string {
-  return formatOrderDate(iso);
+export function formatTrackingTimestamp(iso: string, lang: Language = "en"): string {
+  return formatOrderDate(iso, lang);
 }
 
 export function fulfillmentTone(stage: string): OrderStatusMeta["tone"] {

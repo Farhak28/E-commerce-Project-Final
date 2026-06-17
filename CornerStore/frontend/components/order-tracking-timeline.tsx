@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui";
 import type { OrderTrackingDTO } from "@/lib/types";
+import { useI18n } from "@/lib/use-i18n";
 import { formatFulfillmentStage, formatTrackingTimestamp } from "@/lib/utils/order-status";
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function OrderTrackingTimeline({ tracking, onAdvance, advancing }: Props) {
+  const { t, language } = useI18n();
   const delivered = tracking.fulfillmentStage === "Delivered";
   const cancelled =
     tracking.fulfillmentStage === "Cancelled" ||
@@ -33,7 +35,7 @@ export function OrderTrackingTimeline({ tracking, onAdvance, advancing }: Props)
               onClick={onAdvance}
               disabled={advancing}
             >
-              {advancing ? "Updating…" : "Advance step (demo)"}
+              <span suppressHydrationWarning>{advancing ? t("updating") : t("advanceStep")}</span>
             </Button>
           ) : null}
         </div>
@@ -41,7 +43,7 @@ export function OrderTrackingTimeline({ tracking, onAdvance, advancing }: Props)
         {!cancelled ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-text-muted">
-              <span>Shipment progress</span>
+              <span suppressHydrationWarning>{t("shipmentProgress")}</span>
               <span>{tracking.progressPercent}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-surface-2">
@@ -56,12 +58,20 @@ export function OrderTrackingTimeline({ tracking, onAdvance, advancing }: Props)
         <div className="flex flex-wrap gap-4 text-xs text-text-muted">
           {tracking.trackingNumber ? (
             <span>
-              Tracking ID: <span className="font-mono font-semibold text-foreground">{tracking.trackingNumber}</span>
+              <span suppressHydrationWarning>{t("trackingId")}</span>:{" "}
+              <span className="font-mono font-semibold text-foreground">{tracking.trackingNumber}</span>
             </span>
           ) : null}
-          {tracking.carrierName ? <span>Carrier: {tracking.carrierName}</span> : null}
+          {tracking.carrierName ? (
+            <span>
+              <span suppressHydrationWarning>{t("carrier")}</span>: {tracking.carrierName}
+            </span>
+          ) : null}
           {tracking.estimatedDeliveryAt ? (
-            <span>Est. delivery: {formatTrackingTimestamp(tracking.estimatedDeliveryAt)}</span>
+            <span>
+              <span suppressHydrationWarning>{t("estDelivery")}</span>:{" "}
+              {formatTrackingTimestamp(tracking.estimatedDeliveryAt, language)}
+            </span>
           ) : null}
         </div>
       </div>
@@ -79,39 +89,25 @@ export function OrderTrackingTimeline({ tracking, onAdvance, advancing }: Props)
                   complete
                     ? "border-emerald-500 bg-emerald-500 text-white"
                     : current
-                      ? "border-primary bg-primary text-white shadow-[0_0_0_4px_rgba(var(--primary-rgb,99,102,241),0.15)]"
+                      ? "border-primary bg-primary text-white"
                       : "border-border bg-surface text-text-muted"
                 }`}
-                aria-hidden
               >
                 {complete ? "✓" : index + 1}
               </span>
-
-              <div
-                className={`rounded-xl border px-4 py-3 transition ${
-                  current
-                    ? "border-primary/30 bg-primary/5 shadow-sm"
-                    : complete
-                      ? "border-border bg-surface"
-                      : "border-border/60 bg-surface/50 opacity-70"
-                }`}
-              >
+              <div className={`rounded-xl border p-4 transition ${current ? "border-primary/30 bg-primary/5" : "border-border bg-surface/50"}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold">{step.title}</p>
-                  {current ? (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-                      Current
-                    </span>
+                  {step.occurredAt ? (
+                    <time className="text-xs text-text-muted">
+                      {formatTrackingTimestamp(step.occurredAt, language)}
+                    </time>
                   ) : null}
                 </div>
                 <p className="mt-1 text-sm text-text-muted">{step.description}</p>
                 <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-muted">
+                  <span>{formatFulfillmentStage(step.stage, language)}</span>
                   {step.location ? <span>{step.location}</span> : null}
-                  {step.occurredAt ? (
-                    <span>{formatTrackingTimestamp(step.occurredAt)}</span>
-                  ) : !complete && !current ? (
-                    <span>{formatFulfillmentStage(step.stage)}</span>
-                  ) : null}
                 </div>
               </div>
             </li>

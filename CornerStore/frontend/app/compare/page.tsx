@@ -100,10 +100,10 @@ function CompareContent() {
 
           <Card>
             <h2 className="section-title text-lg font-semibold" suppressHydrationWarning>
-              {ready ? "Official brand pages" : "Official brand pages"}
+              {ready ? t("officialBrandPages", language) : "Official brand pages"}
             </h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Learn more from each manufacturer&apos;s website.
+            <p className="mt-1 text-sm text-text-muted" suppressHydrationWarning>
+              {ready ? t("officialBrandPagesDesc", language) : "Learn more from each manufacturer's website."}
             </p>
             <ul className="mt-4 space-y-3">
               {products.map((product) => (

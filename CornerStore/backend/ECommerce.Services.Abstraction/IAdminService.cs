@@ -12,6 +12,9 @@ public interface IAdminService
     Task<Result<AdminReportsDTO>> GetReportsAsync();
     Task<Result<AdminPagedResult<OrderToReturnDTO>>> GetOrdersPagedAsync(AdminOrderQueryParams queryParams);
     Task<Result<OrderToReturnDTO>> GetOrderByIdAsync(Guid id);
+    Task<Result<AdminPagedResult<OrderToReturnDTO>>> GetReturnsPagedAsync(AdminListQueryParams queryParams, string? status = null);
+    Task<Result<OrderToReturnDTO>> ApproveReturnAsync(Guid orderId);
+    Task<Result<OrderToReturnDTO>> RejectReturnAsync(Guid orderId);
     Task<Result<AdminPagedResult<AdminUserDTO>>> GetUsersPagedAsync(AdminListQueryParams queryParams);
     Task<Result<AdminUserDTO>> GetUserByIdAsync(string id);
     Task<Result<AdminUserDTO>> CreateUserAsync(CreateAdminUserDTO dto);

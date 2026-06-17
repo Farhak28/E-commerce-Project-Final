@@ -8,6 +8,7 @@ import {
   AdminTable,
 } from "@/components/admin/admin-ui";
 import { Button, Card, Input } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import { getAdminKnowledgeStats } from "@/lib/services/admin-ai";
 import {
   createKnowledgeDocument,
@@ -24,6 +25,7 @@ type DocForm = { title: string; category: string; content: string };
 const emptyForm: DocForm = { title: "", category: "FAQ", content: "" };
 
 export default function AdminKnowledgePage() {
+  const { t } = useAdminI18n();
   const [docs, setDocs] = useState<KnowledgeDocumentDTO[]>([]);
   const [stats, setStats] = useState<KnowledgeStatsDTO | null>(null);
   const [form, setForm] = useState<DocForm>(emptyForm);
@@ -46,9 +48,10 @@ export default function AdminKnowledgePage() {
       .catch((err) => {
         setDocs([]);
         setStats(null);
-        setError(err instanceof Error ? err.message : "Failed to load knowledge base");
+        setError(err instanceof Error ? err.message : t("failedToLoadKnowledgeBase"));
       })
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, [refresh]);
 
   const startEdit = (doc: KnowledgeDocumentDTO) => {
@@ -76,21 +79,21 @@ export default function AdminKnowledgePage() {
       resetForm();
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : t("saveFailed"));
     } finally {
       setBusy(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this document and its chunks?")) return;
+    if (!window.confirm(t("confirmDeleteDoc"))) return;
     setBusy(true);
     try {
       await deleteKnowledgeDocument(id);
       if (editingId === id) resetForm();
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : t("deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -103,7 +106,7 @@ export default function AdminKnowledgePage() {
       await reindexAllKnowledge();
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reindex failed");
+      setError(err instanceof Error ? err.message : t("reindexFailed"));
     } finally {
       setBusy(false);
     }
@@ -112,62 +115,62 @@ export default function AdminKnowledgePage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="Knowledge Base"
-        description="Manage RAG documents for policies, FAQs, and store guides. Changes auto-chunk and re-index."
+        title={t("knowledgeTitle")}
+        description={t("knowledgeDescReindex")}
         actions={
           <Button type="button" variant="ghost" disabled={busy} onClick={() => void handleReindexAll()}>
-            Reindex all
+            {t("reindexAll")}
           </Button>
         }
       />
 
       {error && !loading ? (
         <Card className="border-accent/40 bg-accent/5">
-          <p className="text-sm font-semibold text-accent">Could not load knowledge base</p>
+          <p className="text-sm font-semibold text-accent">{t("couldNotLoadKnowledge")}</p>
           <p className="mt-1 text-sm text-text-muted">{error}</p>
         </Card>
       ) : null}
 
       {stats ? (
         <div className="grid gap-4 sm:grid-cols-3">
-          <AdminStatCard label="Documents" value={stats.documentCount} />
-          <AdminStatCard label="Chunks" value={stats.chunkCount} />
+          <AdminStatCard label={t("statDocuments")} value={stats.documentCount} />
+          <AdminStatCard label={t("statChunks")} value={stats.chunkCount} />
           <AdminStatCard
-            label="Last updated"
+            label={t("labelLastUpdated")}
             value={stats.lastUpdatedAt ? new Date(stats.lastUpdatedAt).toLocaleDateString() : "—"}
           />
         </div>
       ) : null}
 
       <Card>
-        <h2 className="font-semibold">{editingId ? "Edit document" : "New document"}</h2>
+        <h2 className="font-semibold">{editingId ? t("editDocument") : t("newDocument")}</h2>
         <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
           <Input
-            placeholder="Title"
+            placeholder={t("placeholderTitle")}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             required
           />
           <Input
-            placeholder="Category (e.g. Shipping, Returns, FAQ)"
+            placeholder={t("placeholderCategory")}
             value={form.category}
             onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
             required
           />
           <textarea
             className="min-h-32 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
-            placeholder="Content"
+            placeholder={t("placeholderContent")}
             value={form.content}
             onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
             required
           />
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={busy}>
-              {editingId ? "Update" : "Create"}
+              {editingId ? t("update") : t("create")}
             </Button>
             {editingId ? (
               <Button type="button" variant="ghost" onClick={resetForm}>
-                Cancel
+                {t("cancel")}
               </Button>
             ) : null}
           </div>
@@ -176,19 +179,19 @@ export default function AdminKnowledgePage() {
       </Card>
 
       {loading ? (
-        <p className="text-sm text-text-muted">Loading documents…</p>
+        <p className="text-sm text-text-muted">{t("loadingDocuments")}</p>
       ) : docs.length === 0 ? (
-        <AdminEmptyState title="No knowledge documents" description="Create your first FAQ or policy document above." />
+        <AdminEmptyState title={t("noKnowledgeDocs")} description={t("noKnowledgeDocsDesc")} />
       ) : (
         <AdminTable
-          columns={["Title", "Category", "Updated", "Actions"]}
+          columns={[t("colTitle"), t("colCategory"), t("colUpdated"), t("actions")]}
           rows={docs.map((doc) => [
             <span key="t" className="font-medium">{doc.title}</span>,
             doc.category,
             new Date(doc.updatedAt).toLocaleDateString(),
             <div key="a" className="flex flex-wrap gap-2">
               <button type="button" className="text-xs font-semibold text-primary" onClick={() => startEdit(doc)}>
-                Edit
+                {t("edit")}
               </button>
               <button
                 type="button"
@@ -196,10 +199,10 @@ export default function AdminKnowledgePage() {
                 disabled={busy}
                 onClick={() => void reindexKnowledgeDocument(doc.id).then(refresh)}
               >
-                Reindex
+                {t("reindex")}
               </button>
               <button type="button" className="text-xs font-semibold text-accent" onClick={() => void handleDelete(doc.id)}>
-                Delete
+                {t("delete")}
               </button>
             </div>,
           ])}

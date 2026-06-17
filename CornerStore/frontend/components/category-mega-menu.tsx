@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { getTypes } from "@/lib/services/products";
 import type { TypeDTO } from "@/lib/types";
+import { useI18n } from "@/lib/use-i18n";
 import { toTypeSlug } from "@/lib/utils/product";
 
 export function CategoryMegaMenu() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [types, setTypes] = useState<TypeDTO[]>([]);
   const ref = useRef<HTMLDivElement>(null);
@@ -31,14 +33,16 @@ export function CategoryMegaMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        Categories
+        <span suppressHydrationWarning>{t("categories")}</span>
         <svg className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open ? (
         <div className="absolute left-0 top-full z-50 mt-2 w-[min(420px,90vw)] animate-rise rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-lg)]">
-          <p className="text-label mb-3 text-text-muted">Shop by category</p>
+          <p className="text-label mb-3 text-text-muted" suppressHydrationWarning>
+            {t("shopByCategory")}
+          </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {types.map((type) => (
               <Link
@@ -51,8 +55,13 @@ export function CategoryMegaMenu() {
               </Link>
             ))}
           </div>
-          <Link href="/categories" className="mt-3 block text-center text-sm font-semibold text-primary" onClick={() => setOpen(false)}>
-            View all categories →
+          <Link
+            href="/categories"
+            className="mt-3 block text-center text-sm font-semibold text-primary"
+            onClick={() => setOpen(false)}
+            suppressHydrationWarning
+          >
+            {t("viewAllCategories")} →
           </Link>
         </div>
       ) : null}

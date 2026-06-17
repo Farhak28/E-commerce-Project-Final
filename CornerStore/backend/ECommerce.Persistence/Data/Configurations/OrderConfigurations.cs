@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -32,6 +32,12 @@ namespace ECommerce.Persistence.Data.Configurations
 
             builder.Property(x => x.TrackingNumber).HasMaxLength(32);
             builder.Property(x => x.CarrierName).HasMaxLength(100).HasDefaultValue("Corner Store Logistics");
+
+            builder
+                .HasOne(x => x.DeliveryTimeSlot)
+                .WithMany()
+                .HasForeignKey(x => x.DeliveryTimeSlotId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

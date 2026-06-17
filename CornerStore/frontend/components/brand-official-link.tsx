@@ -1,4 +1,7 @@
+"use client";
+
 import { getBrandOfficialUrl } from "@/lib/utils/brand-urls";
+import { useI18n } from "@/lib/use-i18n";
 
 type Props = {
   brandName: string;
@@ -13,6 +16,7 @@ export function BrandOfficialLink({
   className = "",
   variant = "inline",
 }: Props) {
+  const { t } = useI18n();
   const url = getBrandOfficialUrl(brandName, officialUrl);
   if (!url) return null;
 
@@ -28,7 +32,7 @@ export function BrandOfficialLink({
       rel="noopener noreferrer"
       className={`${base} ${className}`}
     >
-      <span>Visit {brandName} official site</span>
+      <span suppressHydrationWarning>{t("visitBrandSite", { brand: brandName })}</span>
       <span aria-hidden className="text-xs opacity-70">
         ↗
       </span>

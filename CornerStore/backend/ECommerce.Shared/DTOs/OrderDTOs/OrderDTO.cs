@@ -16,7 +16,14 @@ namespace ECommerce.Shared.DTOs.OrderDTOs
 
         public CheckoutPaymentMethod PaymentMethod { get; init; } = CheckoutPaymentMethod.Card;
 
+        public DeliveryTypeDto DeliveryType { get; init; } = DeliveryTypeDto.Standard;
+
         public DateTimeOffset? ScheduledDeliveryAt { get; init; }
+
+        /// <summary>Calendar date for scheduled delivery (yyyy-MM-dd).</summary>
+        public string? ScheduledDate { get; init; }
+
+        public int? DeliveryTimeSlotId { get; init; }
 
         public string? CouponCode { get; init; }
     }

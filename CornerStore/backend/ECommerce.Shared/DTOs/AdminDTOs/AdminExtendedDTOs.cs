@@ -138,7 +138,8 @@ public record AdminStatsDTO(
     int RedeemedCouponsCount,
     decimal TotalDiscountsGiven,
     int ReviewsCount,
-    int BrandsWithOfficialUrlCount
+    int BrandsWithOfficialUrlCount,
+    int PendingReturnsCount
 );
 
 public record AdminCouponsSummaryDTO(

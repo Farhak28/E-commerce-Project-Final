@@ -8,10 +8,12 @@ import { OrderStatusBadge } from "@/components/order-status-badge";
 import { useAuth } from "@/lib/auth-context";
 import { getOrders } from "@/lib/services/orders";
 import type { OrderToReturnDTO } from "@/lib/types";
+import { useI18n } from "@/lib/use-i18n";
 import { formatFulfillmentStage, formatOrderDate } from "@/lib/utils/order-status";
 
 function OrderHistoryContent() {
   const { isSignedIn } = useAuth();
+  const { t, language } = useI18n();
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderToReturnDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,9 +34,11 @@ function OrderHistoryContent() {
   if (!isSignedIn) {
     return (
       <Card>
-        <p className="text-sm text-text-muted">Sign in to view your Corner Store orders.</p>
-        <Link href="/login" className="mt-3 inline-flex text-sm font-semibold text-primary">
-          Sign in
+        <p className="text-sm text-text-muted" suppressHydrationWarning>
+          {t("signInToViewOrders")}
+        </p>
+        <Link href="/login" className="mt-3 inline-flex text-sm font-semibold text-primary" suppressHydrationWarning>
+          {t("signin")}
         </Link>
       </Card>
     );
@@ -42,17 +46,21 @@ function OrderHistoryContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="section-title text-3xl font-bold">Order History</h1>
+      <h1 className="section-title text-3xl font-bold" suppressHydrationWarning>
+        {t("orderHistory")}
+      </h1>
       {justPlaced ? (
-        <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
-          Your order was placed successfully.
+        <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200" suppressHydrationWarning>
+          {t("orderPlacedSuccess")}
         </p>
       ) : null}
       {loading ? (
         <Skeleton className="h-40 w-full" />
       ) : orders.length === 0 ? (
         <Card>
-          <p className="text-sm text-text-muted">No orders yet.</p>
+          <p className="text-sm text-text-muted" suppressHydrationWarning>
+            {t("noOrdersYet")}
+          </p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -67,11 +75,13 @@ function OrderHistoryContent() {
                     paymentIntentId={order.paymentIntentId}
                   />
                 </div>
-                <p className="mt-1 text-xs text-text-muted">{formatOrderDate(order.orderDate)}</p>
+                <p className="mt-1 text-xs text-text-muted">
+                  {formatOrderDate(order.orderDate, language)}
+                </p>
                 {order.trackingHeadline || order.fulfillmentStage ? (
                   <div className="mt-2 space-y-1.5">
                     <p className="text-sm font-medium">
-                      {order.trackingHeadline ?? formatFulfillmentStage(order.fulfillmentStage ?? "")}
+                      {order.trackingHeadline ?? formatFulfillmentStage(order.fulfillmentStage ?? "", language)}
                     </p>
                     {typeof order.progressPercent === "number" && order.status !== "Cancelled" ? (
                       <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">

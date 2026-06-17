@@ -28,6 +28,7 @@ namespace ECommerce.Services
         private readonly IPaymentService _paymentService;
         private readonly IOrderFulfillmentService _fulfillment;
         private readonly ICouponService _couponService;
+        private readonly IDeliverySchedulingService _deliveryScheduling;
 
         public OrderService(
             IMapper mapper,
@@ -36,7 +37,8 @@ namespace ECommerce.Services
             INotificationService notificationService,
             IPaymentService paymentService,
             IOrderFulfillmentService fulfillment,
-            ICouponService couponService
+            ICouponService couponService,
+            IDeliverySchedulingService deliveryScheduling
         )
         {
             _mapper = mapper;
@@ -46,6 +48,7 @@ namespace ECommerce.Services
             _paymentService = paymentService;
             _fulfillment = fulfillment;
             _couponService = couponService;
+            _deliveryScheduling = deliveryScheduling;
         }
 
         public async Task<Result<OrderToReturnDTO>> CreateOrderAsync(
@@ -164,19 +167,68 @@ namespace ECommerce.Services
             if (stockValidation is not null)
                 return stockValidation;
 
+            var deliveryType = orderDTO.DeliveryType;
+            if (deliveryType == DeliveryTypeDto.Standard
+                && (orderDTO.ScheduledDeliveryAt.HasValue
+                    || (!string.IsNullOrWhiteSpace(orderDTO.ScheduledDate) && orderDTO.DeliveryTimeSlotId.HasValue)))
+                deliveryType = DeliveryTypeDto.Scheduled;
+
             DateTimeOffset? scheduledDeliveryAt = null;
-            if (orderDTO.ScheduledDeliveryAt.HasValue)
+            DateOnly? scheduledDate = null;
+            int? timeSlotId = orderDTO.DeliveryTimeSlotId;
+            DeliveryTimeSlot? timeSlot = null;
+
+            if (deliveryType == DeliveryTypeDto.Scheduled)
             {
-                var scheduleCheck = OrderActionRules.ValidateScheduledDelivery(
-                    orderDTO.ScheduledDeliveryAt.Value
-                );
+                if (orderDTO.ScheduledDeliveryAt.HasValue)
+                {
+                    scheduledDeliveryAt = orderDTO.ScheduledDeliveryAt.Value;
+                    scheduledDate = DateOnly.FromDateTime(scheduledDeliveryAt.Value.UtcDateTime);
+                }
+                else if (!string.IsNullOrWhiteSpace(orderDTO.ScheduledDate) && timeSlotId.HasValue)
+                {
+                    if (!DateOnly.TryParse(orderDTO.ScheduledDate, out var parsedDate))
+                        return Error.Validation("Schedule.InvalidDate", "Invalid scheduled delivery date.");
+
+                    var resolved = await _deliveryScheduling.ResolveScheduledDateTimeAsync(
+                        parsedDate,
+                        timeSlotId.Value
+                    );
+                    if (!resolved.IsSuccess)
+                        return Result<OrderToReturnDTO>.Fail(resolved.Errors.ToList());
+
+                    scheduledDeliveryAt = resolved.Value;
+                    scheduledDate = parsedDate;
+                }
+                else
+                {
+                    return Error.Validation(
+                        "Schedule.Incomplete",
+                        "Scheduled delivery requires a date and time slot."
+                    );
+                }
+
+                var scheduleCheck = await _deliveryScheduling.ValidateScheduleAsync(scheduledDeliveryAt!.Value);
                 if (!scheduleCheck.IsSuccess)
                     return Result<OrderToReturnDTO>.Fail(scheduleCheck.Errors.ToList());
-                scheduledDeliveryAt = orderDTO.ScheduledDeliveryAt.Value;
+
+                if (timeSlotId.HasValue)
+                    timeSlot = await _unitOfWork.GetRepository<DeliveryTimeSlot, int>().GetByIdAsync(timeSlotId.Value);
             }
 
-            var deliveryPrice = ScheduledDeliveryPricing.Calculate(
-                deliveryMethod.Price,
+            var quoteResult = await _deliveryScheduling.GetQuoteAsync(
+                deliveryMethod.Id,
+                deliveryType,
+                deliveryType == DeliveryTypeDto.Scheduled ? scheduledDeliveryAt : null,
+                timeSlotId
+            );
+            if (!quoteResult.IsSuccess)
+                return Result<OrderToReturnDTO>.Fail(quoteResult.Errors.ToList());
+            var deliveryPrice = quoteResult.Value!.TotalPrice;
+
+            var estimatedDelivery = await _deliveryScheduling.EstimateDeliveryDateAsync(
+                deliveryMethod.Id,
+                deliveryType,
                 scheduledDeliveryAt
             );
 
@@ -212,7 +264,14 @@ namespace ECommerce.Services
                 CouponCode = couponCode?.Trim().ToUpperInvariant(),
                 DiscountAmount = discountAmount,
                 Items = orderItems,
+                DeliveryType = deliveryType == DeliveryTypeDto.Scheduled
+                    ? DeliveryType.Scheduled
+                    : DeliveryType.Standard,
                 ScheduledDeliveryAt = scheduledDeliveryAt,
+                ScheduledDeliveryDate = scheduledDate,
+                DeliveryTimeSlotId = timeSlotId,
+                DeliveryTimeSlot = timeSlot,
+                EstimatedDeliveryDate = estimatedDelivery,
             };
 
             DeductStock(stockLines);
@@ -242,6 +301,8 @@ namespace ECommerce.Services
 
             basket.CouponCode = null;
             basket.DiscountAmount = 0;
+            if (orderPaymentMethod is OrderPaymentMethod.CashOnDelivery or OrderPaymentMethod.InstaPay)
+                basket.PaymentIntentID = null;
             await _basketRepository.CreateOrUpdateBasketAsync(basket);
 
             notificationBody =
@@ -251,8 +312,11 @@ namespace ECommerce.Services
                 email,
                 notificationTitle,
                 notificationBody,
-                "orders"
+                "orders",
+                CustomerEmailTrigger.OrderCreated
             );
+
+            await _couponService.SyncAndGetCouponsAsync(email);
 
             //7-Returns a DTO containing the full order details to the client,
             //including Id[OrderId], UserEmail,
@@ -286,29 +350,14 @@ namespace ECommerce.Services
             DateTimeOffset? scheduledDeliveryAt
         )
         {
-            if (scheduledDeliveryAt.HasValue)
-            {
-                var scheduleCheck = OrderActionRules.ValidateScheduledDelivery(
-                    scheduledDeliveryAt.Value
-                );
-                if (!scheduleCheck.IsSuccess)
-                    return Result<DeliveryQuoteDTO>.Fail(scheduleCheck.Errors.ToList());
-            }
-
-            var deliveryMethod = await _unitOfWork
-                .GetRepository<DeliveryMethod, int>()
-                .GetByIdAsync(deliveryMethodId);
-            if (deliveryMethod is null)
-                return Error.NotFound(
-                    "DeliveryMethod.NotFound",
-                    $"The Delivery Method with this Id:{deliveryMethodId} is Not Found "
-                );
-
-            return ScheduledDeliveryPricing.BuildQuote(
-                deliveryMethod.Id,
-                deliveryMethod.ShortName,
-                deliveryMethod.Price,
-                scheduledDeliveryAt
+            var deliveryType = scheduledDeliveryAt.HasValue
+                ? DeliveryTypeDto.Scheduled
+                : DeliveryTypeDto.Standard;
+            return await _deliveryScheduling.GetQuoteAsync(
+                deliveryMethodId,
+                deliveryType,
+                scheduledDeliveryAt,
+                null
             );
         }
 
@@ -374,7 +423,8 @@ namespace ECommerce.Services
                 email,
                 "Order cancelled",
                 $"Order #{order.Id.ToString()[..8]} was cancelled.",
-                "orders"
+                "orders",
+                CustomerEmailTrigger.OrderCancelled
             );
 
             return _mapper.Map<OrderToReturnDTO>(order);
@@ -396,7 +446,7 @@ namespace ECommerce.Services
             if (!OrderActionRules.CanReturn(order))
                 return Error.Validation(
                     "Order.CannotReturn",
-                    "This order is not eligible for return. Returns are available within 14 days of confirmed orders."
+                    "This order is not eligible for return. Returns are available within 14 days after delivery."
                 );
 
             order.Status = OrderStatus.ReturnRequested;
@@ -412,7 +462,8 @@ namespace ECommerce.Services
                 email,
                 "Return requested",
                 $"We received your return request for order #{order.Id.ToString()[..8]}. Our team will follow up shortly.",
-                "orders"
+                "orders",
+                CustomerEmailTrigger.ReturnRequested
             );
 
             return _mapper.Map<OrderToReturnDTO>(order);
@@ -424,7 +475,7 @@ namespace ECommerce.Services
             ScheduleOrderDTO dto
         )
         {
-            var scheduleCheck = OrderActionRules.ValidateScheduledDelivery(dto.ScheduledDeliveryAt);
+            var scheduleCheck = await _deliveryScheduling.ValidateScheduleAsync(dto.ScheduledDeliveryAt);
             if (!scheduleCheck.IsSuccess)
                 return Result<OrderToReturnDTO>.Fail(scheduleCheck.Errors.ToList());
 
@@ -438,9 +489,27 @@ namespace ECommerce.Services
                     "This order can no longer be rescheduled."
                 );
 
+            order.DeliveryType = DeliveryType.Scheduled;
             order.ScheduledDeliveryAt = dto.ScheduledDeliveryAt;
-            order.DeliveryPrice = ScheduledDeliveryPricing.Calculate(
-                order.DeliveryMethod.Price,
+            order.ScheduledDeliveryDate = DateOnly.FromDateTime(dto.ScheduledDeliveryAt.UtcDateTime);
+            order.DeliveryTimeSlotId = dto.DeliveryTimeSlotId;
+            if (dto.DeliveryTimeSlotId.HasValue)
+                order.DeliveryTimeSlot = await _unitOfWork
+                    .GetRepository<DeliveryTimeSlot, int>()
+                    .GetByIdAsync(dto.DeliveryTimeSlotId.Value);
+
+            var quote = await _deliveryScheduling.GetQuoteAsync(
+                order.DeliveryMethodId,
+                DeliveryTypeDto.Scheduled,
+                dto.ScheduledDeliveryAt,
+                dto.DeliveryTimeSlotId
+            );
+            if (!quote.IsSuccess)
+                return Result<OrderToReturnDTO>.Fail(quote.Errors.ToList());
+            order.DeliveryPrice = quote.Value!.TotalPrice;
+            order.EstimatedDeliveryDate = await _deliveryScheduling.EstimateDeliveryDateAsync(
+                order.DeliveryMethodId,
+                DeliveryTypeDto.Scheduled,
                 dto.ScheduledDeliveryAt
             );
 
@@ -450,9 +519,10 @@ namespace ECommerce.Services
 
             await _notificationService.CreateForUserAsync(
                 email,
-                "Delivery scheduled",
-                $"Order #{order.Id.ToString()[..8]} is scheduled for {dto.ScheduledDeliveryAt:MMM d, yyyy h:mm tt}. Delivery cost updated to ${order.DeliveryPrice:0.00}.",
-                "orders"
+                "Delivery rescheduled",
+                $"Order #{order.Id.ToString()[..8]} has been rescheduled for {dto.ScheduledDeliveryAt:MMM d, yyyy h:mm tt}. Delivery cost updated to ${order.DeliveryPrice:0.00}.",
+                "orders",
+                CustomerEmailTrigger.DeliveryRescheduled
             );
 
             return _mapper.Map<OrderToReturnDTO>(order);

@@ -35,16 +35,33 @@ namespace ECommerce.Services.MappingProfiles
                 .ForMember(dest => dest.TrackingNumber, opt => opt.MapFrom(src => src.TrackingNumber))
                 .ForMember(dest => dest.CarrierName, opt => opt.MapFrom(src => src.CarrierName))
                 .ForMember(dest => dest.ProgressPercent, opt => opt.MapFrom(src => FulfillmentLabels.ProgressPercent(src.FulfillmentStage)))
-                .ForMember(dest => dest.TrackingHeadline, opt => opt.MapFrom(src => FulfillmentLabels.Headline(src.FulfillmentStage)))
+                .ForMember(dest => dest.TrackingHeadline, opt => opt.MapFrom<FulfillmentHeadlineResolver>())
                 .ForMember(
                     dest => dest.PaymentMethod,
                     opt => opt.MapFrom(src => OrderPaymentLabels.Format(src.PaymentMethod, src.PaymentIntentId))
                 )
                 .ForMember(dest => dest.CanCancel, opt => opt.MapFrom(src => OrderActionRules.CanCancel(src)))
                 .ForMember(dest => dest.CanReturn, opt => opt.MapFrom(src => OrderActionRules.CanReturn(src)))
-                .ForMember(dest => dest.CanSchedule, opt => opt.MapFrom(src => OrderActionRules.CanSchedule(src)));
+                .ForMember(dest => dest.CanReview, opt => opt.MapFrom(src => OrderActionRules.CanReview(src)))
+                .ForMember(dest => dest.CanSchedule, opt => opt.MapFrom(src => OrderActionRules.CanSchedule(src)))
+                .ForMember(dest => dest.DeliveryType, opt => opt.MapFrom(src => src.DeliveryType.ToString()))
+                .ForMember(
+                    dest => dest.ScheduledDeliveryDate,
+                    opt => opt.MapFrom(src =>
+                        src.ScheduledDeliveryDate.HasValue
+                            ? src.ScheduledDeliveryDate.Value.ToString("yyyy-MM-dd")
+                            : null
+                    )
+                )
+                .ForMember(dest => dest.DeliveryTimeSlotId, opt => opt.MapFrom(src => src.DeliveryTimeSlotId))
+                .ForMember(
+                    dest => dest.DeliveryTimeSlotLabel,
+                    opt => opt.MapFrom(src => src.DeliveryTimeSlot != null ? src.DeliveryTimeSlot.Label : null)
+                )
+                .ForMember(dest => dest.EstimatedDeliveryDate, opt => opt.MapFrom(src => src.EstimatedDeliveryDate));
 
             CreateMap<OrderItem, OrderItemDTO>()
+                .ForMember(D => D.ProductId, O => O.MapFrom(S => S.Product.ProductId))
                 .ForMember(D => D.ProductName, O => O.MapFrom(S => S.Product.ProductName))
                 .ForMember(D => D.PictureUrl, O => O.MapFrom<OrderItemPictureUrlResolver>());
 

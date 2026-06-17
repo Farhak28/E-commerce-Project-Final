@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Card, Skeleton } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 
 export function AdminPageHeader({
   title,
@@ -83,14 +84,17 @@ export function AdminLoadingGrid({ count = 4 }: { count?: number }) {
 export function AdminTable({
   columns,
   rows,
-  emptyMessage = "No data found.",
+  emptyMessage,
 }: {
   columns: string[];
   rows: ReactNode[][];
   emptyMessage?: string;
 }) {
+  const { t } = useAdminI18n();
+  const empty = emptyMessage ?? t("noDataFound");
+
   if (rows.length === 0) {
-    return <AdminEmptyState title={emptyMessage} />;
+    return <AdminEmptyState title={empty} />;
   }
 
   return (
@@ -147,13 +151,14 @@ export function AdminPagination({
   totalCount: number;
   onPageChange: (page: number) => void;
 }) {
+  const { t } = useAdminI18n();
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   if (totalPages <= 1) return null;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
       <p className="text-text-muted">
-        Page {page} of {totalPages} · {totalCount} total
+        {t("pageOfTotal", { page, total: totalPages, count: totalCount })}
       </p>
       <div className="flex gap-2">
         <button
@@ -162,7 +167,7 @@ export function AdminPagination({
           onClick={() => onPageChange(page - 1)}
           className="rounded-lg border border-border px-3 py-1.5 disabled:opacity-40"
         >
-          Previous
+          {t("previous")}
         </button>
         <button
           type="button"
@@ -170,7 +175,7 @@ export function AdminPagination({
           onClick={() => onPageChange(page + 1)}
           className="rounded-lg border border-border px-3 py-1.5 disabled:opacity-40"
         >
-          Next
+          {t("next")}
         </button>
       </div>
     </div>
@@ -181,13 +186,15 @@ export function AdminSearchBar({
   value,
   onChange,
   onSubmit,
-  placeholder = "Search…",
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
   placeholder?: string;
 }) {
+  const { t } = useAdminI18n();
+
   return (
     <form
       className="flex flex-wrap gap-2"
@@ -198,12 +205,12 @@ export function AdminSearchBar({
     >
       <input
         className="min-w-[200px] flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("searchPlaceholder")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
       <button type="submit" className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-        Search
+        {t("search")}
       </button>
     </form>
   );

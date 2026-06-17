@@ -1,0 +1,45 @@
+[
+  {
+    "RuleType": "ExpressSlot",
+    "Label": "Express slot (within 24 hours)",
+    "Amount": 8,
+    "MinLeadHours": 0,
+    "MaxLeadHours": 24,
+    "IsActive": true,
+    "SortOrder": 1
+  },
+  {
+    "RuleType": "NextDaySlot",
+    "Label": "Next-day slot (24–48 hours)",
+    "Amount": 4,
+    "MinLeadHours": 24,
+    "MaxLeadHours": 48,
+    "IsActive": true,
+    "SortOrder": 2
+  },
+  {
+    "RuleType": "EconomyDiscount",
+    "Label": "Economy window (7+ days ahead)",
+    "Amount": 2,
+    "MinLeadDays": 7,
+    "PercentOfBaseCap": 0.15,
+    "IsActive": true,
+    "SortOrder": 3
+  },
+  {
+    "RuleType": "EveningPeak",
+    "Label": "Evening peak (5–9 PM)",
+    "Amount": 3,
+    "WindowStartHour": 17,
+    "WindowEndHour": 21,
+    "IsActive": true,
+    "SortOrder": 4
+  },
+  {
+    "RuleType": "Weekend",
+    "Label": "Weekend delivery",
+    "Amount": 2,
+    "IsActive": true,
+    "SortOrder": 5
+  }
+]

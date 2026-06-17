@@ -215,7 +215,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       scheduledDeliveryAt?: string | null,
       shippingPrice?: number | null,
     ) => {
-      if (!basket) return;
+      if (!basket) throw new Error("Cart not found. Refresh the page and try again.");
       try {
         await persistBasket({
           ...basket,
@@ -224,7 +224,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ...(shippingPrice != null ? { shippingPrice } : {}),
         });
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to set delivery method");
+        const message = e instanceof Error ? e.message : "Failed to set delivery method";
+        setError(message);
+        throw e instanceof Error ? e : new Error(message);
       }
     },
     [basket, persistBasket],

@@ -39,7 +39,7 @@ export function OrderActions({ order, onUpdated }: Props) {
   );
   const [scheduleQuote, setScheduleQuote] = useState<DeliveryQuoteDTO | null>(null);
 
-  const scheduledLabel = formatScheduledDelivery(order.scheduledDeliveryAt);
+  const scheduledLabel = formatScheduledDelivery(order.scheduledDeliveryAt, language);
 
   useEffect(() => {
     if (!showScheduleForm || !order.deliveryMethodId || !scheduleAt) {
@@ -73,7 +73,7 @@ export function OrderActions({ order, onUpdated }: Props) {
       setShowScheduleForm(false);
       setReturnReason("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("somethingWrong", language));
     } finally {
       setLoading(null);
     }
@@ -91,6 +91,12 @@ export function OrderActions({ order, onUpdated }: Props) {
             {ready ? t("scheduledDelivery", language) : "Scheduled delivery"}:{" "}
           </span>
           {scheduledLabel}
+        </p>
+      ) : null}
+
+      {order.status === "ReturnRequested" ? (
+        <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-text-muted" suppressHydrationWarning>
+          {ready ? t("returnSubmittedNotice", language) : t("returnSubmittedNotice", "en")}
         </p>
       ) : null}
 

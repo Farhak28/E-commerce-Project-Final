@@ -1,0 +1,8 @@
+[
+  {
+    "Id": 1,
+    "MinLeadHours": 2,
+    "MaxScheduleDaysAhead": 14,
+    "SchedulingEnabled": true
+  }
+]

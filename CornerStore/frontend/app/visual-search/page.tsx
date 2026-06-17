@@ -6,8 +6,10 @@ import { Button, Card, Input, Skeleton } from "@/components/ui";
 import { VisualSearchImagePreview, VisualSearchResultCards } from "@/components/visual-search-cards";
 import { searchByImage } from "@/lib/services/visual-search";
 import { fileToBase64, validateImageFile } from "@/lib/utils/image-upload";
+import { useI18n } from "@/lib/use-i18n";
 
 export default function VisualSearchPage() {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,11 +37,11 @@ export default function VisualSearchPage() {
       setResult(response);
       setMessage(response.text.replace(/\*\*/g, ""));
     } catch {
-      setError("Visual search failed. Ensure GEMINI_API_KEY is set and try a clearer image.");
+      setError(t("visualSearchFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const { openGallery, openCamera, inputs: cameraInputs } = useCameraCapture((file) => {
     void runVisualSearch(file);
@@ -54,10 +56,8 @@ export default function VisualSearchPage() {
     <div className="space-y-6">
       {cameraInputs}
       <section className="glass animate-float rounded-3xl p-6 md:p-8">
-        <h1 className="section-title text-3xl font-bold">Visual Search</h1>
-        <p className="mt-2 text-sm text-text-muted">
-          Upload a product photo. Gemini Vision analyzes it and matches against the live Corner Store catalog.
-        </p>
+        <h1 className="section-title text-3xl font-bold" suppressHydrationWarning>{t("visualSearchTitle")}</h1>
+        <p className="mt-2 text-sm text-text-muted" suppressHydrationWarning>{t("visualSearchDesc")}</p>
         <div
           className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition ${
             dragOver ? "border-primary bg-primary/5" : "border-border"
@@ -70,14 +70,14 @@ export default function VisualSearchPage() {
             onFileChange(e.dataTransfer.files?.[0]);
           }}
         >
-          <p className="text-sm font-semibold">Drop an image here</p>
-          <p className="mt-1 text-xs text-text-muted">JPG, PNG, WEBP · max 10 MB</p>
+          <p className="text-sm font-semibold" suppressHydrationWarning>{t("dropImageHere")}</p>
+          <p className="mt-1 text-xs text-text-muted" suppressHydrationWarning>{t("imageFormats")}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Button type="button" variant="secondary" onClick={openGallery}>
-              Upload image
+              <span suppressHydrationWarning>{t("uploadImage")}</span>
             </Button>
             <Button type="button" variant="ghost" onClick={openCamera}>
-              Use camera
+              <span suppressHydrationWarning>{t("useCamera")}</span>
             </Button>
           </div>
         </div>
@@ -85,7 +85,8 @@ export default function VisualSearchPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Or describe: gaming headset, Samsung phone…"
+            placeholder={t("describePlaceholder")}
+            suppressHydrationWarning
             className="max-w-md flex-1"
           />
           <Button
@@ -93,16 +94,22 @@ export default function VisualSearchPage() {
             variant="ghost"
             disabled={!query.trim()}
             onClick={() => {
-              setMessage(`Text search: use the AI chat assistant for “${query.trim()}”.`);
+              setMessage(t("textSearchHint", { query: query.trim() }));
               setResult(null);
             }}
           >
-            Text hint
+            <span suppressHydrationWarning>{t("textHint")}</span>
           </Button>
         </div>
         {preview ? <div className="mt-4"><VisualSearchImagePreview src={preview} /></div> : null}
         {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
-        {message ? <p className="mt-3 text-sm text-text-muted">{message}</p> : null}
+        {message ? (
+          <p
+            className={`mt-3 text-sm ${result?.isPersonDetected ? "rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-800 dark:text-amber-200" : "text-text-muted"}`}
+          >
+            {message}
+          </p>
+        ) : null}
       </section>
 
       {loading ? (
@@ -111,7 +118,7 @@ export default function VisualSearchPage() {
             <Skeleton key={i} className="h-40 w-full" />
           ))}
         </div>
-      ) : result ? (
+      ) : result && !result.isPersonDetected && (result.exactMatches.length > 0 || result.similarProducts.length > 0 || result.alternatives.length > 0) ? (
         <Card>
           <VisualSearchResultCards
             exactMatches={result.exactMatches}

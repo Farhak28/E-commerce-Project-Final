@@ -8,10 +8,21 @@ import Link from "next/link";
 import { getAdminOrders } from "@/lib/services/admin";
 import type { OrderToReturnDTO } from "@/lib/types";
 import { formatFulfillmentStage, formatOrderDate } from "@/lib/utils/order-status";
+import { useAdminI18n, type AdminI18nKey } from "@/lib/admin/use-admin-i18n";
 
 const STATUS_OPTIONS = ["", "Pending", "PaymentReceived", "PaymentFailed", "Cancelled", "ReturnRequested", "Returned"];
 
+const STATUS_KEYS: Record<string, AdminI18nKey> = {
+  Pending: "statusPending",
+  PaymentReceived: "statusPaymentReceived",
+  PaymentFailed: "statusPaymentFailed",
+  Cancelled: "statusCancelled",
+  ReturnRequested: "statusReturnRequested",
+  Returned: "statusReturned",
+};
+
 export default function AdminOrdersPage() {
+  const { t } = useAdminI18n();
   const [orders, setOrders] = useState<OrderToReturnDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [emailFilter, setEmailFilter] = useState("");
@@ -48,10 +59,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Orders"
-        description="Fulfillment tracking, scheduled delivery pricing, loyalty coupons, and payment status."
-      />
+      <AdminPageHeader title={t("ordersTitle")} description={t("ordersDesc")} />
 
       <div className="space-y-4 rounded-2xl border border-border bg-surface/80 p-4">
         <AdminSearchBar
@@ -61,19 +69,19 @@ export default function AdminOrdersPage() {
             setPage(1);
             setApplied({ email: emailFilter, status: statusFilter, search });
           }}
-          placeholder="Search by email or order ID…"
+          placeholder={t("searchOrdersPlaceholder")}
         />
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[200px] flex-1">
-            <label className="mb-1 block text-xs font-medium text-text-muted">Customer email</label>
+            <label className="mb-1 block text-xs font-medium text-text-muted">{t("customerEmail")}</label>
             <Input
-              placeholder="Filter by email…"
+              placeholder={t("filterByEmail")}
               value={emailFilter}
               onChange={(e) => setEmailFilter(e.target.value)}
             />
           </div>
           <div className="min-w-[160px]">
-            <label className="mb-1 block text-xs font-medium text-text-muted">Status</label>
+            <label className="mb-1 block text-xs font-medium text-text-muted">{t("status")}</label>
             <select
               className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
               value={statusFilter}
@@ -81,7 +89,7 @@ export default function AdminOrdersPage() {
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s || "all"} value={s}>
-                  {s || "All statuses"}
+                  {s ? t(STATUS_KEYS[s] ?? "statusPending") : t("allStatuses")}
                 </option>
               ))}
             </select>
@@ -93,7 +101,7 @@ export default function AdminOrdersPage() {
               setApplied({ email: emailFilter, status: statusFilter, search });
             }}
           >
-            Apply filters
+            {t("applyFilters")}
           </Button>
         </div>
       </div>
@@ -101,11 +109,11 @@ export default function AdminOrdersPage() {
       {loading ? (
         <Skeleton className="h-48 w-full rounded-2xl" />
       ) : orders.length === 0 ? (
-        <AdminEmptyState title="No orders match your filters" />
+        <AdminEmptyState title={t("noOrdersMatch")} />
       ) : (
         <>
           <AdminTable
-            columns={["Order", "Customer", "Total", "Fulfillment", "Status", "Date", ""]}
+            columns={[t("colOrder"), t("colCustomer"), t("colTotal"), t("colFulfillment"), t("status"), t("colDate"), ""]}
             rows={orders.map((order) => [
               <span key="id" className="font-mono text-xs">{order.id.slice(0, 8)}…</span>,
               order.userEmail,
@@ -119,7 +127,7 @@ export default function AdminOrdersPage() {
               <OrderStatusBadge key="status" status={order.status} paymentMethod={order.paymentMethod} />,
               formatOrderDate(order.orderDate),
               <Link key="view" href={`/admin/orders/${order.id}`} className="text-sm font-semibold text-primary">
-                View
+                {t("view")}
               </Link>,
             ])}
           />

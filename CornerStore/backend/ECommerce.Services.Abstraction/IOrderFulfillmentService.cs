@@ -15,5 +15,6 @@ public interface IOrderFulfillmentService
     Task AdvanceDueOrdersAsync(CancellationToken ct = default);
     void MarkCancelled(Order order);
     void MarkReturnRequested(Order order);
-    OrderTrackingDTO BuildTrackingDto(Order order);
+    void MarkReturned(Order order);
+    OrderTrackingDTO BuildTrackingDto(Order order, string? language = null);
 }

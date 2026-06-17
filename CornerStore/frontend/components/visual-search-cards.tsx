@@ -7,29 +7,29 @@ import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { useCompare } from "@/lib/compare-context";
 import { useWishlist } from "@/lib/wishlist-context";
+import { useI18n } from "@/lib/use-i18n";
 import { mapProductDTO } from "@/lib/utils/product";
 import type { VisualProductMatch } from "@/lib/types/visual-search";
 import type { ProductDTO } from "@/lib/types";
 
-function tierLabel(tier: VisualProductMatch["matchTier"]) {
-  if (tier === "exact") return "Exact match";
-  if (tier === "similar") return "Similar";
-  return "Alternative";
-}
-
-function tierTone(tier: VisualProductMatch["matchTier"]) {
-  if (tier === "exact") return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400";
-  if (tier === "similar") return "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400";
-  return "bg-surface-2 text-text-muted";
-}
-
 function VisualMatchCard({ match }: { match: VisualProductMatch }) {
+  const { t } = useI18n();
   const product = mapProductDTO(match.product as ProductDTO);
   const { addToCart } = useCart();
   const { toggle, has } = useWishlist();
   const { toggleCompare, has: inCompare } = useCompare();
   const { isSignedIn } = useAuth();
   const [adding, setAdding] = useState(false);
+
+  const tierLabel =
+    match.matchTier === "exact" ? t("matchExact") : match.matchTier === "similar" ? t("matchSimilar") : t("matchAlternative");
+
+  const tierTone =
+    match.matchTier === "exact"
+      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+      : match.matchTier === "similar"
+        ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+        : "bg-surface-2 text-text-muted";
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -39,8 +39,8 @@ function VisualMatchCard({ match }: { match: VisualProductMatch }) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tierTone(match.matchTier)}`}>
-              {match.matchPercentage}% · {tierLabel(match.matchTier)}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tierTone}`}>
+              {match.matchPercentage}% · {tierLabel}
             </span>
           </div>
           <p className="mt-1 line-clamp-1 font-semibold">{product.name}</p>
@@ -52,7 +52,7 @@ function VisualMatchCard({ match }: { match: VisualProductMatch }) {
       </Link>
       <div className="grid grid-cols-4 border-t border-border text-[10px] font-semibold">
         <Link href={`/products/${product.id}`} className="py-2 text-center text-primary hover:bg-primary/5">
-          View
+          {t("view")}
         </Link>
         <button
           type="button"
@@ -63,7 +63,7 @@ function VisualMatchCard({ match }: { match: VisualProductMatch }) {
             void addToCart(product.id, 1).finally(() => setAdding(false));
           }}
         >
-          {adding ? "…" : "Cart"}
+          {adding ? "…" : t("cart")}
         </button>
         <button
           type="button"
@@ -71,14 +71,14 @@ function VisualMatchCard({ match }: { match: VisualProductMatch }) {
           disabled={!isSignedIn}
           onClick={() => void toggle(product.id)}
         >
-          {has(product.id) ? "♥ Saved" : "Wishlist"}
+          {has(product.id) ? t("wishlistSaved") : t("wishlistAdd")}
         </button>
         <button
           type="button"
           className={`border-l border-border py-2 ${inCompare(product.id) ? "text-accent" : "text-primary hover:bg-primary/5"}`}
           onClick={() => toggleCompare(product.id)}
         >
-          {inCompare(product.id) ? "✓ Compare" : "Compare"}
+          {inCompare(product.id) ? t("compareAddedShort") : t("compare")}
         </button>
       </div>
     </div>
@@ -107,18 +107,20 @@ export function VisualSearchResultCards({
 }
 
 export function VisualSearchImagePreview({ src, onClear }: { src: string; onClear?: () => void }) {
+  const { t } = useI18n();
+
   return (
     <div className="relative mt-2 inline-block">
       <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="Uploaded product" className="h-full w-full object-cover" />
+        <img src={src} alt={t("uploadedProduct")} className="h-full w-full object-cover" />
       </div>
       {onClear ? (
         <button
           type="button"
-          className="absolute -right-1 -top-1 rounded-full bg-surface px-1.5 text-xs shadow border border-border"
+          className="absolute -right-1 -top-1 rounded-full border border-border bg-surface px-1.5 text-xs shadow"
           onClick={onClear}
-          aria-label="Remove image"
+          aria-label={t("removeImage")}
         >
           ×
         </button>

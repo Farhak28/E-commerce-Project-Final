@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader, AdminPagination, AdminStatCard, AdminTable } from "@/components/admin/admin-ui";
 import { Card, Skeleton } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import { getAdminKnowledgeStats } from "@/lib/services/admin-ai";
 import { getKnowledgeChunks } from "@/lib/services/knowledge";
 import type { KnowledgeChunkDTO, KnowledgeStatsDTO } from "@/lib/types";
 
 export default function AdminChunksPage() {
+  const { t } = useAdminI18n();
   const [chunks, setChunks] = useState<KnowledgeChunkDTO[]>([]);
   const [stats, setStats] = useState<KnowledgeStatsDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,11 +31,11 @@ export default function AdminChunksPage() {
       setError(null);
     } catch (err) {
       setChunks([]);
-      setError(err instanceof Error ? err.message : "Failed to load chunks");
+      setError(err instanceof Error ? err.message : t("failedToLoadChunksData"));
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, t]);
 
   useEffect(() => {
     void load();
@@ -41,15 +43,18 @@ export default function AdminChunksPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Chunk Viewer" description="Browse RAG knowledge chunks, embedding status, and source documents." />
+      <AdminPageHeader title={t("chunksTitle")} description={t("chunksDescExtended")} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <AdminStatCard label="Documents" value={stats?.documentCount ?? "—"} />
-        <AdminStatCard label="Total chunks" value={stats?.chunkCount ?? "—"} />
-        <AdminStatCard label="Last updated" value={stats?.lastUpdatedAt ? new Date(stats.lastUpdatedAt).toLocaleDateString() : "—"} />
+        <AdminStatCard label={t("statDocuments")} value={stats?.documentCount ?? "—"} />
+        <AdminStatCard label={t("statTotalChunks")} value={stats?.chunkCount ?? "—"} />
+        <AdminStatCard
+          label={t("labelLastUpdated")}
+          value={stats?.lastUpdatedAt ? new Date(stats.lastUpdatedAt).toLocaleDateString() : "—"}
+        />
       </div>
       {error ? (
         <Card className="border-accent/40 bg-accent/5">
-          <p className="text-sm font-semibold text-accent">Could not load chunks</p>
+          <p className="text-sm font-semibold text-accent">{t("couldNotLoadChunks")}</p>
           <p className="mt-1 text-sm text-text-muted">{error}</p>
         </Card>
       ) : null}
@@ -58,12 +63,12 @@ export default function AdminChunksPage() {
       ) : !error ? (
         <>
           <AdminTable
-            columns={["Document", "Index", "Preview", "Embedded", "Created"]}
+            columns={[t("colDocument"), t("colIndex"), t("colPreview"), t("colEmbedded"), t("colCreated")]}
             rows={chunks.map((c) => [
               c.documentTitle,
               `#${c.chunkIndex}`,
               <span key="t" className="line-clamp-2 max-w-md text-text-muted">{c.textPreview}</span>,
-              c.hasEmbedding ? "Yes" : "No",
+              c.hasEmbedding ? t("yes") : t("no"),
               new Date(c.createdAt).toLocaleDateString(),
             ])}
           />

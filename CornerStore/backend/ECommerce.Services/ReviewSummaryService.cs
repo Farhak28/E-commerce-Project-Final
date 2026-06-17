@@ -6,12 +6,6 @@ namespace ECommerce.Services;
 
 public sealed class ReviewSummaryService : IReviewSummaryService
 {
-    private static readonly string[] PositiveWords =
-        ["good", "great", "excellent", "amazing", "perfect", "fast", "useful"];
-
-    private static readonly string[] NegativeWords =
-        ["bad", "poor", "slow", "broken", "terrible", "weak", "expensive"];
-
     private static readonly Dictionary<string, string> ThemeLabels = new(StringComparer.OrdinalIgnoreCase)
     {
         ["battery"] = "battery life",
@@ -64,7 +58,7 @@ public sealed class ReviewSummaryService : IReviewSummaryService
         }
 
         var sentiments = reviews
-            .Select(r => ClassifySentiment(r.Comment, r.Rating))
+            .Select(r => ClassifySentiment(r.Rating))
             .ToList();
 
         var positiveCount = sentiments.Count(s => s == Sentiment.Positive);
@@ -105,15 +99,11 @@ public sealed class ReviewSummaryService : IReviewSummaryService
         Negative,
     }
 
-    private static Sentiment ClassifySentiment(string comment, int rating)
+    private static Sentiment ClassifySentiment(int rating)
     {
-        var lower = comment.ToLowerInvariant();
-        var positiveHits = PositiveWords.Count(w => lower.Contains(w, StringComparison.Ordinal));
-        var negativeHits = NegativeWords.Count(w => lower.Contains(w, StringComparison.Ordinal));
-
-        if (positiveHits > negativeHits || (positiveHits == negativeHits && rating >= 4))
+        if (rating >= 4)
             return Sentiment.Positive;
-        if (negativeHits > positiveHits || (positiveHits == negativeHits && rating <= 2))
+        if (rating <= 2)
             return Sentiment.Negative;
         return Sentiment.Neutral;
     }

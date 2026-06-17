@@ -10,7 +10,11 @@ namespace ECommerce.Domain.Entities.ProductModule
     {
         public string Name { get; set; } = default!;
 
+        public string? NameAr { get; set; }
+
         public string Description { get; set; }=default!;
+
+        public string? DescriptionAr { get; set; }
 
         public string PictureUrl { get; set; } = default!;
 

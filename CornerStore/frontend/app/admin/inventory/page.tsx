@@ -6,10 +6,12 @@ import { AdminPageHeader, AdminStatCard, AdminTable } from "@/components/admin/a
 import { Skeleton } from "@/components/ui";
 import { getAdminProducts } from "@/lib/services/admin";
 import type { ProductDTO } from "@/lib/types";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 
 const LOW_STOCK = 10;
 
 export default function AdminInventoryPage() {
+  const { t } = useAdminI18n();
   const [products, setProducts] = useState<ProductDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,26 +26,26 @@ export default function AdminInventoryPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Inventory" description="Monitor stock levels and low-inventory alerts." />
+      <AdminPageHeader title={t("inventoryTitle")} description={t("inventoryDesc")} />
       {loading ? (
         <Skeleton className="h-32 w-full rounded-2xl" />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <AdminStatCard label="Total SKUs" value={products.length} />
-            <AdminStatCard label="Low stock (≤10)" value={lowStock.length} tone={lowStock.length > 0 ? "warning" : "default"} />
-            <AdminStatCard label="In stock" value={products.length - lowStock.length} tone="success" />
+            <AdminStatCard label={t("statTotalSkus")} value={products.length} />
+            <AdminStatCard label={t("statLowStock")} value={lowStock.length} tone={lowStock.length > 0 ? "warning" : "default"} />
+            <AdminStatCard label={t("statInStock")} value={products.length - lowStock.length} tone="success" />
           </div>
           <AdminTable
-            columns={["Product", "Category", "Stock", "Price", ""]}
+            columns={[t("colProduct"), t("colCategory"), t("colStock"), t("colPrice"), ""]}
             rows={lowStock.map((p) => [
               p.name,
               p.productType,
               <span key="s" className="font-semibold text-amber-600 dark:text-amber-400">{p.stockQuantity ?? "—"}</span>,
               `$${p.price}`,
-              <Link key="e" href="/admin/products" className="text-sm text-primary">Edit in Products →</Link>,
+              <Link key="e" href="/admin/products" className="text-sm text-primary">{t("editInProducts")}</Link>,
             ])}
-            emptyMessage="No low-stock alerts — all products are well stocked."
+            emptyMessage={t("inventoryEmpty")}
           />
         </>
       )}

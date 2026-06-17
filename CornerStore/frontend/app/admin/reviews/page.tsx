@@ -5,8 +5,10 @@ import { AdminPageHeader, AdminPagination, AdminSearchBar, AdminTable } from "@/
 import { Button, Skeleton } from "@/components/ui";
 import { deleteAdminReview, getAdminReviews } from "@/lib/services/admin";
 import type { AdminReviewDTO } from "@/lib/types";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 
 export default function AdminReviewsPage() {
+  const { t } = useAdminI18n();
   const [reviews, setReviews] = useState<AdminReviewDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -33,28 +35,28 @@ export default function AdminReviewsPage() {
   }, [load]);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this review?")) return;
+    if (!window.confirm(t("confirmDeleteReview"))) return;
     await deleteAdminReview(id);
     await load();
   };
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="Reviews" description="Moderate product reviews submitted by customers." />
-      <AdminSearchBar value={search} onChange={setSearch} onSubmit={() => { setPage(1); setAppliedSearch(search); }} placeholder="Search product, user, or comment…" />
+      <AdminPageHeader title={t("reviewsTitle")} description={t("reviewsDesc")} />
+      <AdminSearchBar value={search} onChange={setSearch} onSubmit={() => { setPage(1); setAppliedSearch(search); }} placeholder={t("searchReviewsPlaceholder")} />
       {loading ? (
         <Skeleton className="h-48 w-full rounded-2xl" />
       ) : (
         <>
           <AdminTable
-            columns={["Product", "User", "Rating", "Comment", "Date", ""]}
+            columns={[t("colProduct"), t("colUser"), t("colRating"), t("colComment"), t("colDate"), ""]}
             rows={reviews.map((r) => [
               r.productName,
               r.userName,
               `${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}`,
               <span key="c" className="line-clamp-2 max-w-xs">{r.comment}</span>,
               new Date(r.createdAt).toLocaleDateString(),
-              <Button key="d" type="button" variant="ghost" onClick={() => void handleDelete(r.id)}>Delete</Button>,
+              <Button key="d" type="button" variant="ghost" onClick={() => void handleDelete(r.id)}>{t("delete")}</Button>,
             ])}
           />
           <AdminPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} />

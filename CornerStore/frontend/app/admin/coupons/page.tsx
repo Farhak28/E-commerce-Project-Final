@@ -10,6 +10,7 @@ import {
   AdminTable,
 } from "@/components/admin/admin-ui";
 import { Card } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import { getAdminCouponsSummary } from "@/lib/services/admin";
 import type { AdminCouponsSummaryDTO } from "@/lib/types";
 
@@ -20,6 +21,7 @@ function formatRewardKey(key: string): string {
 }
 
 export default function AdminCouponsPage() {
+  const { t } = useAdminI18n();
   const [summary, setSummary] = useState<AdminCouponsSummaryDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,38 +34,33 @@ export default function AdminCouponsPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Loyalty coupons"
-        description="Purchase-based rewards auto-issued per customer. Customers apply codes at cart or checkout."
-      />
+      <AdminPageHeader title={t("couponsTitle")} description={t("couponsDescCart")} />
 
       {loading ? (
         <AdminLoadingGrid count={4} />
       ) : !summary ? (
-        <AdminEmptyState title="Could not load coupon summary" />
+        <AdminEmptyState title={t("couldNotLoadCoupons")} />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <AdminStatCard label="Active coupons" value={summary.activeCoupons} tone="success" />
-            <AdminStatCard label="Redeemed" value={summary.redeemedCoupons} />
-            <AdminStatCard label="Expired" value={summary.expiredCoupons} tone="warning" />
+            <AdminStatCard label={t("statActiveCoupons")} value={summary.activeCoupons} tone="success" />
+            <AdminStatCard label={t("statRedeemed")} value={summary.redeemedCoupons} />
+            <AdminStatCard label={t("statExpired")} value={summary.expiredCoupons} tone="warning" />
             <AdminStatCard
-              label="Total discounts given"
+              label={t("statTotalDiscounts")}
               value={`$${summary.totalDiscountsGiven.toFixed(2)}`}
             />
           </div>
 
           <Card>
-            <h2 className="section-title text-lg font-semibold">Reward tiers</h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Coupons unlock from order count and lifetime spend (welcome, silver, gold, VIP, spend milestones, free shipping).
-            </p>
+            <h2 className="section-title text-lg font-semibold">{t("rewardTiers")}</h2>
+            <p className="mt-1 text-sm text-text-muted">{t("rewardTiersHintExtended")}</p>
             {summary.couponsByReward.length === 0 ? (
-              <p className="mt-4 text-sm text-text-muted">No coupons issued yet.</p>
+              <p className="mt-4 text-sm text-text-muted">{t("noCouponsIssued")}</p>
             ) : (
               <div className="mt-4">
                 <AdminTable
-                  columns={["Reward", "Active", "Redeemed"]}
+                  columns={[t("colReward"), t("colActive"), t("colRedeemed")]}
                   rows={summary.couponsByReward.map((tier) => [
                     formatRewardKey(tier.rewardKey),
                     String(tier.active),
@@ -76,11 +73,11 @@ export default function AdminCouponsPage() {
 
           <Card className="text-sm text-text-muted">
             <p>
-              Coupons are synced when customers visit{" "}
+              {t("couponsSyncHintBefore")}
               <Link href="/account/coupons" className="font-semibold text-primary">
-                Account → My coupons
+                {t("accountMyCoupons")}
               </Link>
-              . Each code is unique per user and single-use.
+              {t("couponsSyncHintAfter")}
             </p>
           </Card>
         </>

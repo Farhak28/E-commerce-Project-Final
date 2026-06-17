@@ -41,6 +41,9 @@ namespace ECommerce.Persistence.Data.DataSeed
                 if (hasProduct && hasBrands && hasTypes && hasDeliveryMethods)
                 {
                     await BackfillBrandOfficialUrlsAsync();
+                    await BackfillProductPictureUrlsFromJsonAsync();
+                    await BackfillProductArabicFromJsonAsync();
+                    await EnsureDeliverySchedulingSeedAsync();
                     return;
                 }
 
@@ -70,11 +73,142 @@ namespace ECommerce.Persistence.Data.DataSeed
 
                 await _dbContext.SaveChangesAsync();
                 await BackfillBrandOfficialUrlsAsync();
+                await BackfillProductPictureUrlsFromJsonAsync();
+                await BackfillProductArabicFromJsonAsync();
+                await EnsureDeliverySchedulingSeedAsync();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error occured during data intialization: {ex}");
             }
+        }
+
+        private async Task EnsureDeliverySchedulingSeedAsync()
+        {
+            if (!await _dbContext.Set<DeliverySchedulingSettings>().AnyAsync())
+                await SeedDataFromJson<DeliverySchedulingSettings, int>(
+                    "delivery-scheduling-settings.json",
+                    _dbContext.Set<DeliverySchedulingSettings>()
+                );
+
+            if (!await _dbContext.Set<DeliveryPricingRule>().AnyAsync())
+                await SeedPricingRulesFromJsonAsync();
+
+            if (!await _dbContext.Set<DeliveryTimeSlot>().AnyAsync())
+                await SeedTimeSlotsFromJsonAsync();
+
+            if (!await _dbContext.Set<DeliveryHoliday>().AnyAsync())
+                await SeedOptionalJsonArray<DeliveryHoliday, int>("delivery-holidays.json", _dbContext.Set<DeliveryHoliday>());
+
+            if (!await _dbContext.Set<BlockedDeliveryDate>().AnyAsync())
+                await SeedOptionalJsonArray<BlockedDeliveryDate, int>("blocked-delivery-dates.json", _dbContext.Set<BlockedDeliveryDate>());
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        private async Task SeedTimeSlotsFromJsonAsync()
+        {
+            var filePath = ResolveSeedJsonPath("delivery-time-slots.json");
+            if (!File.Exists(filePath))
+                return;
+
+            await using var dataStream = File.OpenRead(filePath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var rows = await JsonSerializer.DeserializeAsync<List<DeliveryTimeSlotSeed>>(dataStream, options);
+            if (rows is null || rows.Count == 0)
+                return;
+
+            foreach (var row in rows)
+            {
+                if (!TimeOnly.TryParse(row.StartTime, out var start) || !TimeOnly.TryParse(row.EndTime, out var end))
+                    continue;
+
+                await _dbContext.Set<DeliveryTimeSlot>().AddAsync(new DeliveryTimeSlot
+                {
+                    Label = row.Label,
+                    StartTime = start,
+                    EndTime = end,
+                    Capacity = row.Capacity,
+                    IsActive = row.IsActive,
+                    SortOrder = row.SortOrder,
+                });
+            }
+        }
+
+        private async Task SeedPricingRulesFromJsonAsync()
+        {
+            var filePath = ResolveSeedJsonPath("delivery-pricing-rules.json");
+            if (!File.Exists(filePath))
+                return;
+
+            await using var dataStream = File.OpenRead(filePath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+            var rows = await JsonSerializer.DeserializeAsync<List<DeliveryPricingRuleSeed>>(dataStream, options);
+            if (rows is null)
+                return;
+
+            foreach (var row in rows)
+            {
+                await _dbContext.Set<DeliveryPricingRule>().AddAsync(new DeliveryPricingRule
+                {
+                    RuleType = row.RuleType,
+                    Label = row.Label,
+                    Amount = row.Amount,
+                    MinLeadHours = row.MinLeadHours,
+                    MaxLeadHours = row.MaxLeadHours,
+                    MinLeadDays = row.MinLeadDays,
+                    WindowStartHour = row.WindowStartHour,
+                    WindowEndHour = row.WindowEndHour,
+                    DayOfWeek = row.DayOfWeek,
+                    PercentOfBaseCap = row.PercentOfBaseCap,
+                    IsActive = row.IsActive,
+                    SortOrder = row.SortOrder,
+                });
+            }
+        }
+
+        private async Task SeedOptionalJsonArray<T, TKey>(string fileName, DbSet<T> dbset)
+            where T : BaseEntity<TKey>
+        {
+            var filePath = ResolveSeedJsonPath(fileName);
+            if (!File.Exists(filePath))
+                return;
+
+            await using var dataStream = File.OpenRead(filePath);
+            var data = await JsonSerializer.DeserializeAsync<List<T>>(
+                dataStream,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+            if (data is not null && data.Count > 0)
+                await dbset.AddRangeAsync(data);
+        }
+
+        private sealed class DeliveryTimeSlotSeed
+        {
+            public string Label { get; set; } = "";
+            public string StartTime { get; set; } = "";
+            public string EndTime { get; set; } = "";
+            public int Capacity { get; set; }
+            public bool IsActive { get; set; } = true;
+            public int SortOrder { get; set; }
+        }
+
+        private sealed class DeliveryPricingRuleSeed
+        {
+            public DeliveryPricingRuleType RuleType { get; set; }
+            public string Label { get; set; } = "";
+            public decimal Amount { get; set; }
+            public int? MinLeadHours { get; set; }
+            public int? MaxLeadHours { get; set; }
+            public int? MinLeadDays { get; set; }
+            public int? WindowStartHour { get; set; }
+            public int? WindowEndHour { get; set; }
+            public DayOfWeek? DayOfWeek { get; set; }
+            public decimal? PercentOfBaseCap { get; set; }
+            public bool IsActive { get; set; } = true;
+            public int SortOrder { get; set; }
         }
 
         private bool ShouldReloadSeedFromJson()
@@ -135,6 +269,101 @@ namespace ECommerce.Persistence.Data.DataSeed
             };
 
             await _dbContext.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        private async Task BackfillProductPictureUrlsFromJsonAsync()
+        {
+            var filePath = ResolveSeedJsonPath("products.json");
+            if (!File.Exists(filePath))
+                return;
+
+            await using var dataStream = File.OpenRead(filePath);
+            var seedProducts = await JsonSerializer.DeserializeAsync<List<Product>>(
+                dataStream,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+            if (seedProducts is null || seedProducts.Count == 0)
+                return;
+
+            var pictureByName = seedProducts
+                .Where(p => !string.IsNullOrWhiteSpace(p.PictureUrl))
+                .ToDictionary(p => p.Name, p => p.PictureUrl.Trim(), StringComparer.OrdinalIgnoreCase);
+
+            var products = await _dbContext.Products.ToListAsync();
+            var changed = false;
+            foreach (var product in products)
+            {
+                if (!pictureByName.TryGetValue(product.Name, out var pictureUrl))
+                    continue;
+                if (string.Equals(product.PictureUrl, pictureUrl, StringComparison.Ordinal))
+                    continue;
+
+                product.PictureUrl = pictureUrl;
+                changed = true;
+            }
+
+            if (changed)
+                await _dbContext.SaveChangesAsync();
+        }
+
+        private async Task BackfillProductArabicFromJsonAsync()
+        {
+            var filePath = ResolveSeedJsonPath("products.json");
+            if (!File.Exists(filePath))
+                return;
+
+            await using var dataStream = File.OpenRead(filePath);
+            using var doc = await JsonDocument.ParseAsync(dataStream);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return;
+
+            var arabicByName = new Dictionary<string, (string? NameAr, string? DescriptionAr)>(
+                StringComparer.OrdinalIgnoreCase
+            );
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (!item.TryGetProperty("Name", out var nameEl))
+                    continue;
+                var name = nameEl.GetString();
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                string? nameAr = item.TryGetProperty("NameAr", out var nameArEl) ? nameArEl.GetString() : null;
+                string? descriptionAr = item.TryGetProperty("DescriptionAr", out var descArEl)
+                    ? descArEl.GetString()
+                    : null;
+                if (!string.IsNullOrWhiteSpace(nameAr) || !string.IsNullOrWhiteSpace(descriptionAr))
+                    arabicByName[name] = (nameAr, descriptionAr);
+            }
+
+            if (arabicByName.Count == 0)
+                return;
+
+            var products = await _dbContext.Products.ToListAsync();
+            var changed = false;
+            foreach (var product in products)
+            {
+                if (!arabicByName.TryGetValue(product.Name, out var arabic))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(arabic.NameAr) && product.NameAr != arabic.NameAr)
+                {
+                    product.NameAr = arabic.NameAr;
+                    changed = true;
+                }
+
+                if (
+                    !string.IsNullOrWhiteSpace(arabic.DescriptionAr)
+                    && product.DescriptionAr != arabic.DescriptionAr
+                )
+                {
+                    product.DescriptionAr = arabic.DescriptionAr;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                await _dbContext.SaveChangesAsync();
         }
 
         private async Task BackfillBrandOfficialUrlsAsync()
@@ -202,10 +431,14 @@ namespace ECommerce.Persistence.Data.DataSeed
 
         private static string ResolveSeedJsonPath(string fileName)
         {
-            var candidates = new List<string>
+            var candidates = new List<string>();
+
+            foreach (var root in FindCornerStoreRoots())
             {
-                Path.Combine(AppContext.BaseDirectory, "Data", "DataSeed", "JsonFiles", fileName),
-            };
+                candidates.Add(Path.Combine(root, "database", "seed-data", fileName));
+            }
+
+            candidates.Add(Path.Combine(AppContext.BaseDirectory, "Data", "DataSeed", "JsonFiles", fileName));
 
             var asmPath = typeof(DataIntializer).Assembly.Location;
             if (!string.IsNullOrEmpty(asmPath))
@@ -241,6 +474,34 @@ namespace ECommerce.Persistence.Data.DataSeed
             throw new FileNotFoundException(
                 $"Seed JSON not found: {fileName}. Checked: {string.Join("; ", candidates)}"
             );
+        }
+
+        private static IEnumerable<string> FindCornerStoreRoots()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var roots = new List<string>();
+
+            void TryAdd(string? path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    return;
+
+                var full = Path.GetFullPath(path);
+                if (!seen.Add(full))
+                    return;
+
+                if (Directory.Exists(Path.Combine(full, "database", "seed-data")))
+                    roots.Add(full);
+            }
+
+            var dir = AppContext.BaseDirectory;
+            for (var i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+            {
+                TryAdd(dir);
+                dir = Path.GetDirectoryName(dir);
+            }
+
+            return roots;
         }
     }
 }

@@ -8,8 +8,10 @@ import { getProducts } from "@/lib/services/products";
 import type { Product } from "@/lib/types";
 import { mapProductDTO } from "@/lib/utils/product";
 import { getRecentlyViewedIds } from "@/lib/utils/recently-viewed";
+import { useI18n } from "@/lib/use-i18n";
 
 export default function RecentlyViewedPage() {
+  const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,8 +33,8 @@ export default function RecentlyViewedPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="section-title text-3xl font-bold">Recently Viewed</h1>
-      <p className="text-sm text-text-muted">Continue browsing Corner Store from where you stopped.</p>
+      <h1 className="section-title text-3xl font-bold" suppressHydrationWarning>{t("recentlyViewed")}</h1>
+      <p className="text-sm text-text-muted" suppressHydrationWarning>{t("recentlyViewedPageDesc")}</p>
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -41,9 +43,9 @@ export default function RecentlyViewedPage() {
         </div>
       ) : products.length === 0 ? (
         <Card>
-          <p className="text-sm text-text-muted">No recently viewed products yet.</p>
-          <Link href="/products" className="mt-3 inline-flex text-sm font-semibold text-primary">
-            Browse products
+          <p className="text-sm text-text-muted" suppressHydrationWarning>{t("noRecentlyViewed")}</p>
+          <Link href="/products" className="mt-3 inline-flex text-sm font-semibold text-primary" suppressHydrationWarning>
+            {t("browseProducts")}
           </Link>
         </Card>
       ) : (

@@ -142,6 +142,8 @@ export type DeliveryQuoteDTO = {
   basePrice: number;
   totalPrice: number;
   scheduledDeliveryAt?: string | null;
+  estimatedDeliveryDate?: string | null;
+  deliveryTime?: string | null;
   lines: DeliveryQuoteLineDTO[];
 };
 
@@ -153,16 +155,107 @@ export type DeliveryMethodDTO = {
   price: number;
 };
 
+export type DeliveryType = "Standard" | "Scheduled";
+
+export type DeliverySchedulingSettingsDTO = {
+  minLeadHours: number;
+  maxScheduleDaysAhead: number;
+  schedulingEnabled: boolean;
+};
+
+export type AvailableDeliveryDateDTO = {
+  date: string;
+  isAvailable: boolean;
+  reason?: string | null;
+};
+
+export type DeliveryTimeSlotDTO = {
+  id: number;
+  label: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  remainingCapacity: number;
+  isAvailable: boolean;
+};
+
+export type DeliveryPricingRuleDTO = {
+  id: number;
+  ruleType: string;
+  label: string;
+  amount: number;
+  isActive: boolean;
+};
+
+export type DeliveryHolidayDTO = {
+  id: number;
+  date: string;
+  name: string;
+};
+
+export type BlockedDeliveryDateDTO = {
+  id: number;
+  date: string;
+  reason?: string | null;
+};
+
+export type DeliveryTimeSlotAdminDTO = {
+  id: number;
+  label: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+export type AdminShippingConfigDTO = {
+  settings: DeliverySchedulingSettingsDTO;
+  timeSlots: DeliveryTimeSlotAdminDTO[];
+  pricingRules: DeliveryPricingRuleDTO[];
+  holidays: DeliveryHolidayDTO[];
+  blockedDates: BlockedDeliveryDateDTO[];
+};
+
+export type UpdateDeliverySchedulingSettingsRequest = {
+  minLeadHours: number;
+  maxScheduleDaysAhead: number;
+  schedulingEnabled: boolean;
+};
+
+export type UpsertDeliveryTimeSlotRequest = {
+  label: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+export type CreateDeliveryHolidayRequest = {
+  date: string;
+  name: string;
+};
+
+export type CreateBlockedDeliveryDateRequest = {
+  date: string;
+  reason?: string | null;
+};
+
 export type OrderDTO = {
   basketId: string;
   deliveryMethodId: number;
   shipToAddress: AddressDTO;
   paymentMethod?: number;
+  deliveryType?: DeliveryType | number;
   scheduledDeliveryAt?: string;
+  scheduledDate?: string;
+  deliveryTimeSlotId?: number;
   couponCode?: string;
 };
 
 export type OrderItemDTO = {
+  productId: number;
   productName: string;
   pictureUrl: string;
   price: number;
@@ -191,11 +284,17 @@ export type OrderToReturnDTO = {
   discountAmount?: number;
   total: number;
   scheduledDeliveryAt?: string | null;
+  deliveryType?: DeliveryType | string;
+  scheduledDeliveryDate?: string | null;
+  deliveryTimeSlotId?: number | null;
+  deliveryTimeSlotLabel?: string | null;
+  estimatedDeliveryDate?: string | null;
   cancelledAt?: string | null;
   returnRequestedAt?: string | null;
   returnReason?: string | null;
   canCancel?: boolean;
   canReturn?: boolean;
+  canReview?: boolean;
   canSchedule?: boolean;
 };
 
@@ -251,6 +350,7 @@ export type AdminStatsDTO = {
   totalDiscountsGiven: number;
   reviewsCount: number;
   brandsWithOfficialUrlCount: number;
+  pendingReturnsCount: number;
 };
 
 export type FulfillmentByStageDTO = {

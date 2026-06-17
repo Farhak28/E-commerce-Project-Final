@@ -8,7 +8,8 @@ import { StarRating } from "@/components/star-rating";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { getProductReviews, addProductReview } from "@/lib/services/reviews";
-import { getSentimentBadge, getSentimentScore } from "@/lib/utils/sentiment";
+import { getRatingSentimentScore, getSentimentBadge } from "@/lib/utils/sentiment";
+import { useI18n } from "@/lib/use-i18n";
 
 type ReviewRow = {
   id?: number;
@@ -29,6 +30,7 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
   const { addToCart } = useCart();
   const { isSignedIn, session } = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
 
   const loadReviews = useCallback(() => {
     setLoadingReviews(true);
@@ -66,7 +68,7 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
   const sentimentCounts = useMemo(() => {
     const counts = { positive: 0, neutral: 0, negative: 0 };
     reviews.forEach((review) => {
-      const score = getSentimentScore(review.comment);
+      const score = getRatingSentimentScore(review.rating);
       if (score > 0) counts.positive += 1;
       else if (score < 0) counts.negative += 1;
       else counts.neutral += 1;
@@ -86,15 +88,15 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isSignedIn) {
-      setFeedback({ type: "err", text: "Sign in to leave a review." });
+      setFeedback({ type: "err", text: t("signInToLeaveReview") });
       return;
     }
     if (!comment.trim()) {
-      setFeedback({ type: "err", text: "Write a short comment before submitting." });
+      setFeedback({ type: "err", text: t("writeCommentFirst") });
       return;
     }
     if (comment.trim().length > 2000) {
-      setFeedback({ type: "err", text: "Comment must be 2000 characters or less." });
+      setFeedback({ type: "err", text: t("commentTooLong") });
       return;
     }
 
@@ -118,11 +120,11 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
       ]);
       setComment("");
       setRating(5);
-      setFeedback({ type: "ok", text: "Review submitted. Thank you!" });
+      setFeedback({ type: "ok", text: t("reviewSubmitted") });
       router.refresh();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Could not submit review. Try again later.";
+        err instanceof Error ? err.message : t("reviewSubmitFailed");
       setFeedback({ type: "err", text: message });
     } finally {
       setSubmitting(false);
@@ -133,9 +135,9 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
     <section className="space-y-4">
       <div className="flex gap-2">
         {[
-          { id: "specs", label: "Overview" },
-          { id: "reviews", label: `Reviews (${reviews.length})` },
-          { id: "checkout", label: "Checkout" },
+          { id: "specs", label: t("tabOverview") },
+          { id: "reviews", label: t("tabReviewsCount", { count: reviews.length }) },
+          { id: "checkout", label: t("tabCheckout") },
         ].map((item) => (
           <button
             key={item.id}
@@ -150,27 +152,24 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
 
       {tab === "specs" ? (
         <div className="animate-rise rounded-2xl border border-border bg-surface p-4">
-          <h2 className="section-title text-xl font-semibold">Product overview</h2>
-          <p className="mt-2 text-sm text-text-muted">
-            Ratings and sentiment are computed from live Corner Store reviews.
-          </p>
+          <h2 className="section-title text-xl font-semibold" suppressHydrationWarning>{t("productOverview")}</h2>
+          <p className="mt-2 text-sm text-text-muted" suppressHydrationWarning>{t("overviewDesc")}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-              <p className="font-semibold">Average rating</p>
+              <p className="font-semibold" suppressHydrationWarning>{t("averageRating")}</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-2xl font-bold">{averageRating.toFixed(1)}</span>
                 <StarRating value={averageRating} readOnly size="sm" />
               </div>
             </div>
             <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-              <p className="font-semibold">Review count</p>
+              <p className="font-semibold" suppressHydrationWarning>{t("reviewCount")}</p>
               <p className="mt-2 text-2xl font-bold">{reviews.length}</p>
             </div>
             <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-              <p className="font-semibold">Sentiment mix</p>
-              <p className="mt-2 text-xs text-text-muted">
-                {sentimentPct.positive}% positive · {sentimentPct.neutral}% neutral · {sentimentPct.negative}%
-                negative
+              <p className="font-semibold" suppressHydrationWarning>{t("sentimentMix")}</p>
+              <p className="mt-2 text-xs text-text-muted" suppressHydrationWarning>
+                {t("sentimentBreakdown", sentimentPct)}
               </p>
             </div>
           </div>
@@ -184,10 +183,8 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="section-title text-xl font-semibold">Ratings &amp; reviews</h2>
-              <p className="mt-1 text-xs text-text-muted">
-                Share your experience — star rating and written comment
-              </p>
+              <h2 className="section-title text-xl font-semibold" suppressHydrationWarning>{t("ratingsAndReviews")}</h2>
+              <p className="mt-1 text-xs text-text-muted" suppressHydrationWarning>{t("shareExperience")}</p>
             </div>
             {reviews.length > 0 ? (
               <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
@@ -199,55 +196,55 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
           </div>
 
           {loadingReviews ? (
-            <p className="mt-4 text-sm text-text-muted">Loading reviews…</p>
+            <p className="mt-4 text-sm text-text-muted" suppressHydrationWarning>{t("loadingReviews")}</p>
           ) : (
             <>
               <div className="mt-4 grid gap-4 lg:grid-cols-4">
                 <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-                  <p className="font-semibold">Average</p>
+                  <p className="font-semibold" suppressHydrationWarning>{t("average")}</p>
                   <p className="mt-2 text-3xl font-bold">{averageRating.toFixed(1)}</p>
                   <StarRating value={averageRating} readOnly size="sm" />
                 </div>
                 <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-                  <p className="font-semibold text-secondary">Positive</p>
+                  <p className="font-semibold text-secondary" suppressHydrationWarning>{t("positive")}</p>
                   <p className="mt-2 text-2xl font-bold">{sentimentPct.positive}%</p>
                 </div>
                 <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-                  <p className="font-semibold">Neutral</p>
+                  <p className="font-semibold" suppressHydrationWarning>{t("neutral")}</p>
                   <p className="mt-2 text-2xl font-bold">{sentimentPct.neutral}%</p>
                 </div>
                 <div className="rounded-2xl bg-surface-2 p-4 text-sm">
-                  <p className="font-semibold text-accent">Negative</p>
+                  <p className="font-semibold text-accent" suppressHydrationWarning>{t("negative")}</p>
                   <p className="mt-2 text-2xl font-bold">{sentimentPct.negative}%</p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 <form className="rounded-2xl bg-surface-2 p-4" onSubmit={handleSubmit}>
-                  <h3 className="font-semibold">Write a review</h3>
+                  <h3 className="font-semibold" suppressHydrationWarning>{t("writeReview")}</h3>
                   {!isSignedIn ? (
                     <p className="mt-2 text-sm text-text-muted">
-                      <Link href="/login" className="font-semibold text-primary hover:underline">
-                        Sign in
+                      <Link href="/login" className="font-semibold text-primary hover:underline" suppressHydrationWarning>
+                        {t("signin")}
                       </Link>{" "}
-                      to rate and review this product.
+                      <span suppressHydrationWarning>{t("signInToReview")}</span>
                     </p>
                   ) : (
-                    <p className="mt-2 text-xs text-text-muted">
-                      Posting as {session?.displayName ?? "you"}
+                    <p className="mt-2 text-xs text-text-muted" suppressHydrationWarning>
+                      {t("postingAs", { name: session?.displayName ?? t("postingAsYou") })}
                     </p>
                   )}
                   <div className="mt-3 space-y-3">
                     <div>
-                      <label className="block text-sm font-medium">Your rating</label>
+                      <label className="block text-sm font-medium" suppressHydrationWarning>{t("yourRating")}</label>
                       <div className="mt-2 flex items-center gap-2">
                         <StarRating value={rating} onChange={setRating} />
                         <span className="text-sm text-text-muted">{rating} / 5</span>
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="review-comment" className="block text-sm font-medium">
-                        Comment
+                      <label htmlFor="review-comment" className="block text-sm font-medium" suppressHydrationWarning>
+                        {t("comment")}
                       </label>
                       <textarea
                         id="review-comment"
@@ -255,7 +252,8 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
                         onChange={(e) => setComment(e.target.value)}
                         className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm"
                         rows={4}
-                        placeholder="What did you like or dislike?"
+                        placeholder={t("reviewPlaceholder")}
+                        suppressHydrationWarning
                         maxLength={2000}
                         disabled={!isSignedIn}
                       />
@@ -269,14 +267,14 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
                       </p>
                     ) : null}
                     <Button type="submit" className="w-full" disabled={submitting || !isSignedIn}>
-                      {submitting ? "Submitting…" : "Submit review"}
+                      <span suppressHydrationWarning>{submitting ? t("submitting") : t("submitReview")}</span>
                     </Button>
                   </div>
                 </form>
 
                 <div className="max-h-96 space-y-3 overflow-y-auto">
                   {reviews.length === 0 ? (
-                    <p className="text-sm text-text-muted">No reviews yet. Be the first to review.</p>
+                    <p className="text-sm text-text-muted" suppressHydrationWarning>{t("noReviewsYet")}</p>
                   ) : (
                     reviews.map((review) => (
                       <div
@@ -288,7 +286,7 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
                           <StarRating value={review.rating} readOnly size="sm" />
                         </div>
                         <p className="mt-1 text-xs text-text-muted">
-                          {getSentimentBadge(getSentimentScore(review.comment))}
+                          {getSentimentBadge(getRatingSentimentScore(review.rating))}
                           {review.createdAt
                             ? ` · ${new Date(review.createdAt).toLocaleDateString()}`
                             : ""}
@@ -306,8 +304,8 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
 
       {tab === "checkout" ? (
         <div className="animate-rise rounded-2xl border border-border bg-surface p-4">
-          <h2 className="section-title text-xl font-semibold">Instant checkout</h2>
-          <p className="mt-2 text-sm text-text-muted">Add to cart and continue to secure checkout.</p>
+          <h2 className="section-title text-xl font-semibold" suppressHydrationWarning>{t("instantCheckout")}</h2>
+          <p className="mt-2 text-sm text-text-muted" suppressHydrationWarning>{t("instantCheckoutDesc")}</p>
           <Button
             type="button"
             className="mt-4"
@@ -316,7 +314,7 @@ export function ProductDetailsTabs({ productId }: { productId: number }) {
               router.push("/checkout");
             }}
           >
-            Proceed to checkout
+            <span suppressHydrationWarning>{t("proceedToCheckout")}</span>
           </Button>
         </div>
       ) : null}

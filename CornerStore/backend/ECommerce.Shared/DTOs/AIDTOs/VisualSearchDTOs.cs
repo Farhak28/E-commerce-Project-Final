@@ -19,7 +19,10 @@ public record VisualProductAttributesDTO(
     string? ProductName,
     IReadOnlyList<string> Features,
     IReadOnlyList<string> Keywords,
-    double Confidence
+    double Confidence,
+    string? SubjectType = null,
+    string? ModelLine = null,
+    string? CatalogMatchName = null
 );
 
 public record VisualProductMatchDTO(
@@ -35,7 +38,8 @@ public record VisualSearchResponseDTO(
     IReadOnlyList<VisualProductMatchDTO> ExactMatches,
     IReadOnlyList<VisualProductMatchDTO> SimilarProducts,
     IReadOnlyList<VisualProductMatchDTO> Alternatives,
-    Guid? SessionId = null
+    Guid? SessionId = null,
+    bool IsPersonDetected = false
 );
 
 public record VisualSearchAnalyticsDTO(

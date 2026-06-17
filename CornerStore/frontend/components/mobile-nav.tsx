@@ -59,7 +59,7 @@ export function MobileBottomNav() {
         type="button"
         onClick={toggleAssistant}
         className="fixed bottom-[calc(var(--mobile-nav-height)+1rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 text-xl text-white shadow-[var(--shadow-glow)] transition hover:scale-105 active:scale-95 md:bottom-6 md:right-6"
-        aria-label="Open AI shopping assistant"
+        aria-label={ready ? t("openAssistant", language) : "Open AI shopping assistant"}
       >
         ✦
         {compareIds.length > 0 ? (

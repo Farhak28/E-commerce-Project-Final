@@ -23,16 +23,29 @@ import { t } from "@/lib/i18n";
 import {
   PAYMENT_METHOD_API,
   PAYMENT_OPTIONS,
+  DELIVERY_TYPE_API,
+  isOfflinePayment,
   usesStripe,
   type CheckoutPaymentMethod,
+  type DeliveryType,
 } from "@/lib/payment-methods";
+import { ApiError } from "@/lib/services/api-client";
 import { applyAccountCoupon } from "@/lib/services/account";
+import * as deliveryService from "@/lib/services/delivery";
 import * as ordersService from "@/lib/services/orders";
 import * as paymentsService from "@/lib/services/payments";
 import { isStripeConfigured, loadStripeConfig, type StripeConfigDTO } from "@/lib/stripe-config";
-import type { AddressDTO, DeliveryMethodDTO, DeliveryQuoteDTO, SavedAddressDTO } from "@/lib/types";
+import { DeliveryCalendar } from "@/components/delivery-calendar";
+import type {
+  AddressDTO,
+  AvailableDeliveryDateDTO,
+  DeliveryQuoteDTO,
+  DeliveryTimeSlotDTO,
+  SavedAddressDTO,
+} from "@/lib/types";
 import { defaultSaveAsName, emptyAddress, isAddressComplete, savedToAddressDTO } from "@/lib/utils/address";
 import { clearStripeReturnParams, readStripeReturnStatus } from "@/lib/stripe-checkout-return";
+import { formatScheduledDelivery } from "@/lib/utils/order-status";
 
 function paymentMethodLabel(method: CheckoutPaymentMethod, language: "en" | "ar", ready: boolean) {
   if (!ready) {
@@ -91,11 +104,18 @@ export function CheckoutFlow() {
   const [saveNewAddress, setSaveNewAddress] = useState(false);
   const [saveAsName, setSaveAsName] = useState("Home");
   const [addressesLoading, setAddressesLoading] = useState(false);
-  const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethodDTO[]>([]);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
-  const [scheduledDeliveryAt, setScheduledDeliveryAt] = useState("");
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("Standard");
+  const [schedulingEnabled, setSchedulingEnabled] = useState(true);
+  const [availableDates, setAvailableDates] = useState<AvailableDeliveryDateDTO[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [timeSlots, setTimeSlots] = useState<DeliveryTimeSlotDTO[]>([]);
+  const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<number | null>(null);
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuoteDTO | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [datesLoading, setDatesLoading] = useState(false);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("cod");
   const [stripeConfig, setStripeConfig] = useState<StripeConfigDTO | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -111,9 +131,6 @@ export function CheckoutFlow() {
     void loadStripeConfig().then((cfg) => {
       if (cancelled) return;
       setStripeConfig(cfg);
-      if (isStripeConfigured(cfg)) {
-        setPaymentMethod((current) => (current === "cod" ? "card" : current));
-      }
     });
     return () => {
       cancelled = true;
@@ -167,15 +184,18 @@ export function CheckoutFlow() {
     void ordersService
       .getDeliveryMethods()
       .then((methods) => {
-        if (!cancelled) setDeliveryMethods(methods);
+        if (cancelled) return;
+        setSelectedDeliveryId((prev) => {
+          if (prev !== null) return prev;
+          if (basket?.deliveryMethodId) return basket.deliveryMethodId;
+          return methods[0]?.id ?? null;
+        });
       })
-      .catch(() => {
-        if (!cancelled) setDeliveryMethods([]);
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [basket?.deliveryMethodId]);
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -210,10 +230,81 @@ export function CheckoutFlow() {
     [subtotal, effectiveShipping, effectiveDiscount],
   );
 
-  const scheduledIso = useMemo(
-    () => (scheduledDeliveryAt ? new Date(scheduledDeliveryAt).toISOString() : null),
-    [scheduledDeliveryAt],
-  );
+  const scheduledIso = useMemo(() => {
+    if (deliveryType !== "Scheduled") return null;
+    return deliveryQuote?.scheduledDeliveryAt ?? null;
+  }, [deliveryType, deliveryQuote?.scheduledDeliveryAt]);
+
+  const basketScheduledAt = useMemo(() => {
+    if (deliveryType !== "Scheduled") return null;
+    return scheduledIso ?? deliveryQuote?.scheduledDeliveryAt ?? null;
+  }, [deliveryType, scheduledIso, deliveryQuote?.scheduledDeliveryAt]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void deliveryService.getDeliverySettings().then((settings) => {
+      if (!cancelled) setSchedulingEnabled(settings.schedulingEnabled);
+    }).catch(() => {
+      if (!cancelled) setSchedulingEnabled(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedDeliveryId || deliveryType !== "Scheduled") {
+      setAvailableDates([]);
+      return;
+    }
+
+    let cancelled = false;
+    setDatesLoading(true);
+    void deliveryService
+      .getAvailableDeliveryDates(selectedDeliveryId)
+      .then((dates) => {
+        if (!cancelled) setAvailableDates(dates);
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableDates([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDatesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDeliveryId, deliveryType]);
+
+  useEffect(() => {
+    if (!selectedDeliveryId || deliveryType !== "Scheduled" || !selectedDate) {
+      setTimeSlots([]);
+      setSelectedTimeSlotId(null);
+      return;
+    }
+
+    let cancelled = false;
+    setSlotsLoading(true);
+    void deliveryService
+      .getDeliveryTimeSlots(selectedDeliveryId, selectedDate)
+      .then((slots) => {
+        if (!cancelled) {
+          setTimeSlots(slots);
+          setSelectedTimeSlotId(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTimeSlots([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDeliveryId, deliveryType, selectedDate]);
 
   useEffect(() => {
     if (!selectedDeliveryId) {
@@ -221,15 +312,38 @@ export function CheckoutFlow() {
       return;
     }
 
+    if (deliveryType === "Scheduled" && (!selectedDate || !selectedTimeSlotId)) {
+      setDeliveryQuote(null);
+      return;
+    }
+
     let cancelled = false;
     setQuoteLoading(true);
-    void ordersService
-      .getDeliveryQuote(selectedDeliveryId, scheduledIso)
-      .then((quote) => {
-        if (!cancelled) setDeliveryQuote(quote);
+    setQuoteError(null);
+    void deliveryService
+      .getDeliveryQuote(selectedDeliveryId, {
+        deliveryType,
+        ...(deliveryType === "Scheduled"
+          ? { scheduledDate: selectedDate, deliveryTimeSlotId: selectedTimeSlotId }
+          : {}),
       })
-      .catch(() => {
-        if (!cancelled) setDeliveryQuote(null);
+      .then((quote) => {
+        if (!cancelled) {
+          setDeliveryQuote(quote);
+          setQuoteError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setDeliveryQuote(null);
+          const message =
+            err instanceof ApiError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : "Could not calculate delivery cost.";
+          setQuoteError(message);
+        }
       })
       .finally(() => {
         if (!cancelled) setQuoteLoading(false);
@@ -238,7 +352,7 @@ export function CheckoutFlow() {
     return () => {
       cancelled = true;
     };
-  }, [selectedDeliveryId, scheduledIso]);
+  }, [selectedDeliveryId, deliveryType, selectedDate, selectedTimeSlotId]);
 
   useEffect(() => {
     if (!basket?.id || !basket.couponCode || !selectedDeliveryId) return;
@@ -301,12 +415,22 @@ export function CheckoutFlow() {
       setError(ready ? t("selectDelivery", language) : "Select a delivery method.");
       return;
     }
+    if (deliveryType === "Scheduled") {
+      if (!selectedDate || !selectedTimeSlotId) {
+        setError(ready ? t("selectScheduleSlot", language) : "Select a delivery date and time slot.");
+        return;
+      }
+      if (!deliveryQuote) {
+        setError(ready ? t("deliveryQuoteLoading", language) : "Waiting for delivery quote. Try again.");
+        return;
+      }
+    }
     setLoading(true);
     setError(null);
     try {
       await setDeliveryMethod(
         selectedDeliveryId,
-        scheduledIso,
+        basketScheduledAt,
         deliveryQuote?.totalPrice ?? null,
       );
       setStep(2);
@@ -322,7 +446,7 @@ export function CheckoutFlow() {
     resetPaymentState();
     setLoading(true);
     try {
-      await syncBasket(selectedDeliveryId, scheduledIso, deliveryQuote?.totalPrice ?? null);
+      await syncBasket(selectedDeliveryId, basketScheduledAt, deliveryQuote?.totalPrice ?? null);
       const updated = await paymentsService.createOrUpdatePaymentIntent(basket.id);
       const secret = paymentsService.readClientSecret(updated);
       if (!secret) {
@@ -348,7 +472,7 @@ export function CheckoutFlow() {
     refreshCart,
     syncBasket,
     selectedDeliveryId,
-    scheduledIso,
+    basketScheduledAt,
     deliveryQuote?.totalPrice,
   ]);
 
@@ -363,7 +487,7 @@ export function CheckoutFlow() {
 
     void (async () => {
       try {
-        await syncBasket(selectedDeliveryId, scheduledIso, deliveryQuote?.totalPrice ?? null);
+        await syncBasket(selectedDeliveryId, basketScheduledAt, deliveryQuote?.totalPrice ?? null);
         const updated = await paymentsService.createOrUpdatePaymentIntent(basket.id);
         if (cancelled) return;
         const secret = paymentsService.readClientSecret(updated);
@@ -401,7 +525,7 @@ export function CheckoutFlow() {
     refreshCart,
     syncBasket,
     selectedDeliveryId,
-    scheduledIso,
+    basketScheduledAt,
     deliveryQuote?.totalPrice,
   ]);
 
@@ -433,17 +557,34 @@ export function CheckoutFlow() {
       setStep(0);
       return;
     }
+    if (usesStripe(paymentMethod) && !paymentReady) {
+      setError(ready ? t("completePaymentFirst", language) : "Complete payment before placing order.");
+      setStep(2);
+      return;
+    }
+    if (isOfflinePayment(paymentMethod) && !paymentReady) {
+      setError(ready ? t("continueToReview", language) : "Continue to review to confirm your payment choice.");
+      setStep(2);
+      return;
+    }
 
     setLoading(true);
     setError(null);
     try {
-      await syncBasket(deliveryId, scheduledIso, deliveryQuote?.totalPrice ?? null);
+      await syncBasket(deliveryId, basketScheduledAt, deliveryQuote?.totalPrice ?? null);
       await ordersService.createOrder({
         basketId: basket.id,
         deliveryMethodId: deliveryId,
         shipToAddress: address,
         paymentMethod: PAYMENT_METHOD_API[paymentMethod],
-        ...(scheduledIso ? { scheduledDeliveryAt: scheduledIso } : {}),
+        deliveryType: DELIVERY_TYPE_API[deliveryType],
+        ...(deliveryType === "Scheduled" && selectedDate && selectedTimeSlotId
+          ? {
+              scheduledDate: selectedDate,
+              deliveryTimeSlotId: selectedTimeSlotId,
+              scheduledDeliveryAt: scheduledIso ?? deliveryQuote?.scheduledDeliveryAt ?? undefined,
+            }
+          : {}),
         ...(basket.couponCode ? { couponCode: basket.couponCode } : {}),
       });
       await clearCart();
@@ -460,12 +601,16 @@ export function CheckoutFlow() {
     clearCart,
     language,
     paymentMethod,
+    paymentReady,
     ready,
     router,
-    scheduledIso,
+    basketScheduledAt,
     deliveryQuote?.totalPrice,
     selectedDeliveryId,
     syncBasket,
+    deliveryType,
+    selectedDate,
+    selectedTimeSlotId,
   ]);
 
   useEffect(() => {
@@ -580,70 +725,168 @@ export function CheckoutFlow() {
           ) : null}
 
           {step === 1 ? (
-            <div className="mt-3 space-y-2">
-              {deliveryMethods.length === 0 ? (
-                <p className="text-sm text-text-muted">Loading delivery options…</p>
-              ) : (
-                deliveryMethods.map((m) => (
-                  <label
-                    key={m.id}
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 ${selectedDeliveryId === m.id ? "border-primary bg-primary/5" : "border-border"}`}
-                  >
-                    <div>
-                      <p className="font-semibold">{m.shortName}</p>
-                      <p className="text-xs text-text-muted">{m.description} — {m.deliveryTime}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">${m.price}</span>
-                      <input type="radio" name="delivery" checked={selectedDeliveryId === m.id} onChange={() => setSelectedDeliveryId(m.id)} />
-                    </div>
-                  </label>
-                ))
-              )}
-              <div className="mt-4 space-y-2 rounded-xl border border-border bg-surface-2 p-4">
-                <label className="block text-sm font-medium">
-                  {ready ? t("preferredDeliveryOptional", language) : "Preferred delivery time (optional)"}
-                </label>
-                <Input
-                  type="datetime-local"
-                  value={scheduledDeliveryAt}
-                  onChange={(e) => setScheduledDeliveryAt(e.target.value)}
-                  min={(() => {
-                    const d = new Date(Date.now() + 2 * 60 * 60 * 1000);
-                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                    return d.toISOString().slice(0, 16);
-                  })()}
-                  max={(() => {
-                    const d = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                    return d.toISOString().slice(0, 16);
-                  })()}
-                />
-                <p className="text-xs text-text-muted">
-                  {ready ? t("scheduleHint", language) : "Must be at least 2 hours from now, within 14 days."}
+            <div className="mt-3 space-y-4">
+              {!selectedDeliveryId ? (
+                <p className="text-sm text-text-muted">
+                  {ready ? t("loadingDelivery", language) : "Loading delivery options…"}
                 </p>
-                {quoteLoading ? (
-                  <Skeleton className="mt-2 h-16 w-full" />
-                ) : deliveryQuote && scheduledDeliveryAt ? (
-                  <div className="mt-3 space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                    <p className="font-semibold">
-                      {ready ? "Calculated delivery cost" : "Calculated delivery cost"}
-                    </p>
-                    {deliveryQuote.lines.map((line) => (
-                      <div key={line.label} className="flex justify-between gap-2 text-text-muted">
-                        <span>{line.label}</span>
-                        <span className={line.amount < 0 ? "text-emerald-600" : ""}>
-                          {line.amount < 0 ? "-" : ""}${Math.abs(line.amount).toFixed(2)}
+              ) : null}
+
+              {schedulingEnabled ? (
+                <div className="space-y-2 rounded-xl border border-border bg-surface-2 p-4">
+                  <p className="text-sm font-medium">
+                    {ready ? t("deliveryTypeLabel", language) : "Delivery type"}
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(["Standard", "Scheduled"] as const).map((type) => (
+                      <label
+                        key={type}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${
+                          deliveryType === type ? "border-primary bg-primary/5" : "border-border"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="deliveryType"
+                          checked={deliveryType === type}
+                          onChange={() => {
+                            setDeliveryType(type);
+                            if (type === "Standard") {
+                              setSelectedDate(null);
+                              setSelectedTimeSlotId(null);
+                            }
+                          }}
+                        />
+                        <span>
+                          {type === "Standard"
+                            ? ready
+                              ? t("standardDelivery", language)
+                              : "Standard delivery"
+                            : ready
+                              ? t("scheduledDelivery", language)
+                              : "Scheduled delivery"}
                         </span>
-                      </div>
+                      </label>
                     ))}
-                    <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground">
-                      <span>Total shipping</span>
-                      <span>${deliveryQuote.totalPrice.toFixed(2)}</span>
-                    </div>
                   </div>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
+
+              {deliveryType === "Standard" && deliveryQuote && !quoteLoading ? (
+                <div className="space-y-1 rounded-xl border border-border bg-surface-2 p-4 text-sm">
+                  <p className="font-medium">
+                    {ready ? t("standardDelivery", language) : "Standard delivery"}
+                  </p>
+                  {deliveryQuote.deliveryTime ? (
+                    <p className="text-text-muted">
+                      {ready
+                        ? t("usuallyArrivesIn", language, { window: deliveryQuote.deliveryTime })
+                        : `Usually arrives in ${deliveryQuote.deliveryTime}`}
+                    </p>
+                  ) : null}
+                  {deliveryQuote.estimatedDeliveryDate ? (
+                    <p className="text-foreground">
+                      {ready ? t("estimatedDeliveryBy", language) : "Estimated by"}:{" "}
+                      <span className="font-semibold">
+                        {formatScheduledDelivery(deliveryQuote.estimatedDeliveryDate, language)}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {deliveryType === "Scheduled" && selectedDeliveryId ? (
+                <div className="space-y-4 rounded-xl border border-border bg-surface-2 p-4">
+                  <div>
+                    <p className="mb-2 text-sm font-medium">
+                      {ready ? t("selectDeliveryDate", language) : "Select delivery date"}
+                    </p>
+                    {datesLoading ? (
+                      <Skeleton className="h-56 w-full" />
+                    ) : (
+                      <DeliveryCalendar
+                        availableDates={availableDates}
+                        selectedDate={selectedDate}
+                        onSelect={setSelectedDate}
+                        language={language}
+                      />
+                    )}
+                  </div>
+
+                  {selectedDate ? (
+                    <div>
+                      <p className="mb-2 text-sm font-medium">
+                        {ready ? t("selectTimeSlot", language) : "Select time slot"}
+                      </p>
+                      {slotsLoading ? (
+                        <Skeleton className="h-20 w-full" />
+                      ) : timeSlots.length === 0 ? (
+                        <p className="text-sm text-text-muted">
+                          {ready ? t("noTimeSlots", language) : "No time slots available for this date."}
+                        </p>
+                      ) : (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {timeSlots.map((slot) => (
+                            <label
+                              key={slot.id}
+                              className={`flex cursor-pointer flex-col rounded-lg border p-3 text-sm ${
+                                selectedTimeSlotId === slot.id
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border"
+                              } ${!slot.isAvailable ? "cursor-not-allowed opacity-50" : ""}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  name="timeSlot"
+                                  disabled={!slot.isAvailable}
+                                  checked={selectedTimeSlotId === slot.id}
+                                  onChange={() => setSelectedTimeSlotId(slot.id)}
+                                />
+                                <span className="font-medium">{slot.label}</span>
+                              </div>
+                              <span className="mt-1 text-xs text-text-muted">
+                                {slot.startTime} – {slot.endTime}
+                                {slot.isAvailable
+                                  ? ` · ${slot.remainingCapacity} ${ready ? t("slotsLeft", language) : "left"}`
+                                  : ` · ${ready ? t("slotFull", language) : "Full"}`}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {quoteError ? (
+                <p className="rounded-lg bg-accent/10 px-3 py-2 text-sm text-accent">{quoteError}</p>
+              ) : null}
+
+              {quoteLoading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : deliveryQuote &&
+                (deliveryType === "Standard" ||
+                  (deliveryType === "Scheduled" && selectedDate && selectedTimeSlotId)) ? (
+                <div className="space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                  <p className="font-semibold">
+                    {ready ? t("calculatedShipping", language) : "Calculated delivery cost"}
+                  </p>
+                  {deliveryQuote.lines.map((line) => (
+                    <div key={line.label} className="flex justify-between gap-2 text-text-muted">
+                      <span>{line.label}</span>
+                      <span className={line.amount < 0 ? "text-emerald-600" : ""}>
+                        {line.amount < 0 ? "-" : ""}${Math.abs(line.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground">
+                    <span>{ready ? t("shipping", language) : "Total shipping"}</span>
+                    <span>${deliveryQuote.totalPrice.toFixed(2)}</span>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -710,7 +953,8 @@ export function CheckoutFlow() {
                       onSuccess={() => {
                         setPaymentReady(true);
                         setError(null);
-                        void placeOrder();
+                        pendingAutoPlace.current = true;
+                        void refreshCart();
                       }}
                       onError={(msg) => {
                         setError(msg);
@@ -781,9 +1025,17 @@ export function CheckoutFlow() {
               ))}
               <p className="text-text-muted">
                 {paymentReady
-                  ? ready
-                    ? t("paymentConfirmed", language)
-                    : "Payment confirmed. Place your order to finish."
+                  ? isOfflinePayment(paymentMethod)
+                    ? paymentMethod === "cod"
+                      ? ready
+                        ? t("codInstructions", language)
+                        : "Pay cash when your order arrives."
+                      : ready
+                        ? t("instaPayInstructions", language)
+                        : "Complete InstaPay after placing your order."
+                    : ready
+                      ? t("paymentConfirmed", language)
+                      : "Payment confirmed. Place your order to finish."
                   : ready
                     ? t("completePaymentFirst", language)
                     : "Complete payment before placing order."}
@@ -838,9 +1090,21 @@ export function CheckoutFlow() {
                 <span>-${effectiveDiscount.toFixed(2)}</span>
               </p>
             ) : null}
-            {deliveryQuote && scheduledDeliveryAt && deliveryQuote.totalPrice !== deliveryQuote.basePrice ? (
+            {deliveryType === "Standard" && deliveryQuote?.deliveryTime ? (
               <p className="text-xs text-text-muted">
-                Includes time-slot adjustments for your selected delivery window.
+                {ready
+                  ? t("usuallyArrivesIn", language, { window: deliveryQuote.deliveryTime })
+                  : `Usually arrives in ${deliveryQuote.deliveryTime}`}
+                {deliveryQuote.estimatedDeliveryDate
+                  ? ` · ${ready ? t("estimatedDeliveryBy", language) : "Estimated by"} ${formatScheduledDelivery(deliveryQuote.estimatedDeliveryDate, language)}`
+                  : ""}
+              </p>
+            ) : null}
+            {deliveryType === "Scheduled" &&
+            deliveryQuote &&
+            deliveryQuote.totalPrice !== deliveryQuote.basePrice ? (
+              <p className="text-xs text-text-muted">
+                {ready ? t("scheduledShippingNote", language) : "Includes scheduling adjustments for your selected window."}
               </p>
             ) : null}
             <p className="flex justify-between font-bold">

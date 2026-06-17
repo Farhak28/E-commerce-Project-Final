@@ -1,0 +1,5 @@
+[
+  { "Label": "Morning", "StartTime": "09:00:00", "EndTime": "12:00:00", "Capacity": 20, "IsActive": true, "SortOrder": 1 },
+  { "Label": "Afternoon", "StartTime": "12:00:00", "EndTime": "17:00:00", "Capacity": 25, "IsActive": true, "SortOrder": 2 },
+  { "Label": "Evening", "StartTime": "17:00:00", "EndTime": "21:00:00", "Capacity": 15, "IsActive": true, "SortOrder": 3 }
+]

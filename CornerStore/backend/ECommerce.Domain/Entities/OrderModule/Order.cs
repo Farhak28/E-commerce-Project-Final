@@ -34,7 +34,18 @@ namespace ECommerce.Domain.Entities.OrderModule
 
         public OrderPaymentMethod PaymentMethod { get; set; } = OrderPaymentMethod.Card;
 
+        public DeliveryType DeliveryType { get; set; } = DeliveryType.Standard;
+
         public DateTimeOffset? ScheduledDeliveryAt { get; set; }
+
+        public DateOnly? ScheduledDeliveryDate { get; set; }
+
+        public int? DeliveryTimeSlotId { get; set; }
+
+        public DeliveryTimeSlot? DeliveryTimeSlot { get; set; }
+
+        /// <summary>Estimated arrival date communicated to the customer.</summary>
+        public DateTimeOffset? EstimatedDeliveryDate { get; set; }
 
         public DateTimeOffset? CancelledAt { get; set; }
 

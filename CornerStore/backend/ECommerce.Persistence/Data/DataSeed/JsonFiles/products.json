@@ -3,477 +3,649 @@
     "Name": "iPhone 14 Pro",
     "Description": "Powerful Apple phone.",
     "Price": 55000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1678652197831-2d180705cd2c?w=500&auto=format&fit=crop",
     "ProductBrandId": 1,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.apple.com",
+    "NameAr": "آيفون 14 برو",
+    "DescriptionAr": "هاتف قوي."
   },
   {
     "Name": "iPhone 13",
     "Description": "Reliable iPhone.",
     "Price": 42000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=500&auto=format&fit=crop",
     "ProductBrandId": 1,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.apple.com",
+    "NameAr": "آيفون 13",
+    "DescriptionAr": "هاتف موثوق."
   },
   {
     "Name": "Samsung S23 Ultra",
     "Description": "Flagship Samsung.",
     "Price": 48000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&auto=format&fit=crop",
     "ProductBrandId": 2,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.samsung.com",
+    "NameAr": "سامسونج S23 ألترا",
+    "DescriptionAr": "هاتف راقٍ."
   },
   {
     "Name": "Samsung A54",
     "Description": "Mid-range Samsung.",
     "Price": 15000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&auto=format&fit=crop",
     "ProductBrandId": 2,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.samsung.com",
+    "NameAr": "سامسونج A54",
+    "DescriptionAr": "هاتف متوسط."
   },
   {
     "Name": "Xiaomi 13 Pro",
     "Description": "Fast Xiaomi phone.",
     "Price": 30000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop",
     "ProductBrandId": 11,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.mi.com",
+    "NameAr": "شاومي 13 برو",
+    "DescriptionAr": "سريع."
   },
   {
     "Name": "Oppo Reno 10",
     "Description": "Stylish Oppo.",
     "Price": 18000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop",
     "ProductBrandId": 12,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.oppo.com",
+    "NameAr": "أوبو Reno 10",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Realme GT Neo",
     "Description": "Gaming Realme.",
     "Price": 16000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1565630916779-e303be97b6f5?w=500&auto=format&fit=crop",
     "ProductBrandId": 13,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.realme.com",
+    "NameAr": "ريلمي GT Neo",
+    "DescriptionAr": "للألعاب."
   },
   {
     "Name": "Huawei P50",
     "Description": "Premium Huawei.",
     "Price": 25000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=500&auto=format&fit=crop",
     "ProductBrandId": 10,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.huawei.com",
+    "NameAr": "هواوي P50",
+    "DescriptionAr": "متميز."
   },
   {
     "Name": "OnePlus 11",
     "Description": "Smooth OnePlus.",
     "Price": 32000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&auto=format&fit=crop",
     "ProductBrandId": 14,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://www.oneplus.com",
+    "NameAr": "ون بلس 11",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Google Pixel 7",
     "Description": "Clean Android.",
     "Price": 28000,
-    "PictureUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&auto=format&fit=crop",
     "ProductBrandId": 15,
-    "ProductTypeId": 1
+    "ProductTypeId": 1,
+    "BrandUrl": "https://store.google.com",
+    "NameAr": "جوجل بيكسل 7",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
-
   {
     "Name": "PlayStation 5",
     "Description": "Next-gen console.",
     "Price": 30000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=500&auto=format&fit=crop",
     "ProductBrandId": 3,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.sony.com",
+    "NameAr": "بلايستيشن 5",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Xbox Series X",
     "Description": "Powerful Xbox.",
     "Price": 28000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1605901309584-818e25960a8f?w=500&auto=format&fit=crop",
     "ProductBrandId": 16,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.microsoft.com",
+    "NameAr": "Xbox Series X",
+    "DescriptionAr": "هاتف قوي."
   },
   {
     "Name": "Xbox Series S",
     "Description": "Budget Xbox.",
     "Price": 18000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1605901309584-818e25960a8f?w=500&auto=format&fit=crop",
     "ProductBrandId": 16,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.microsoft.com",
+    "NameAr": "Xbox Series S",
+    "DescriptionAr": "اقتصادي."
   },
   {
     "Name": "PS5 Controller",
     "Description": "Wireless controller.",
     "Price": 3500,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=500&auto=format&fit=crop",
     "ProductBrandId": 3,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.sony.com",
+    "NameAr": "PS5 Controller",
+    "DescriptionAr": "لاسلكي."
   },
   {
     "Name": "Gaming Chair",
     "Description": "Comfortable chair.",
     "Price": 7000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop",
     "ProductBrandId": 25,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.corsair.com",
+    "NameAr": "ألعاب Chair",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Racing Wheel",
     "Description": "Driving wheel.",
     "Price": 9000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop",
     "ProductBrandId": 18,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.logitech.com",
+    "NameAr": "Racing Wheel",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Gaming Mouse",
     "Description": "Precision mouse.",
     "Price": 1500,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&auto=format&fit=crop",
     "ProductBrandId": 18,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.logitech.com",
+    "NameAr": "ألعاب ماوس",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Gaming Keyboard RGB",
     "Description": "RGB keyboard.",
     "Price": 2500,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop",
     "ProductBrandId": 26,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.coolermaster.com",
+    "NameAr": "ألعاب لوحة مفاتيح RGB",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "VR Headset",
     "Description": "Virtual reality.",
     "Price": 12000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=500&auto=format&fit=crop",
     "ProductBrandId": 3,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.sony.com",
+    "NameAr": "VR Headset",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Nintendo Switch",
     "Description": "Portable console.",
     "Price": 20000,
-    "PictureUrl": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop",
     "ProductBrandId": 17,
-    "ProductTypeId": 2
+    "ProductTypeId": 2,
+    "BrandUrl": "https://www.nintendo.com",
+    "NameAr": "نينتندو Switch",
+    "DescriptionAr": "محمول."
   },
-
   {
     "Name": "MacBook Air M2",
     "Description": "Light laptop.",
     "Price": 60000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop",
     "ProductBrandId": 1,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.apple.com",
+    "NameAr": "ماك بوك Air M2",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Dell XPS 13",
     "Description": "Premium Dell.",
     "Price": 50000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=500&auto=format&fit=crop",
     "ProductBrandId": 5,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.dell.com",
+    "NameAr": "ديل XPS 13",
+    "DescriptionAr": "متميز."
   },
   {
     "Name": "HP Pavilion",
     "Description": "Daily laptop.",
     "Price": 25000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500&auto=format&fit=crop",
     "ProductBrandId": 6,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.hp.com",
+    "NameAr": "إتش بي Pavilion",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Lenovo Legion 5",
     "Description": "Gaming Lenovo.",
     "Price": 45000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=500&auto=format&fit=crop",
     "ProductBrandId": 7,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.lenovo.com",
+    "NameAr": "لينوفو Legion 5",
+    "DescriptionAr": "للألعاب."
   },
   {
     "Name": "ASUS ROG",
     "Description": "Gaming ASUS.",
     "Price": 65000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=500&auto=format&fit=crop",
     "ProductBrandId": 4,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.asus.com",
+    "NameAr": "أسوس ROG",
+    "DescriptionAr": "للألعاب."
   },
   {
     "Name": "Acer Nitro 5",
     "Description": "Budget gaming.",
     "Price": 40000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=500&auto=format&fit=crop",
     "ProductBrandId": 8,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.acer.com",
+    "NameAr": "أيسر Nitro 5",
+    "DescriptionAr": "اقتصادي."
   },
   {
     "Name": "MSI Katana",
     "Description": "Powerful MSI.",
     "Price": 47000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=500&auto=format&fit=crop",
     "ProductBrandId": 9,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.msi.com",
+    "NameAr": "إم إس آي Katana",
+    "DescriptionAr": "هاتف قوي."
   },
   {
     "Name": "Huawei MateBook",
     "Description": "Slim Huawei.",
     "Price": 30000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop",
     "ProductBrandId": 10,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.huawei.com",
+    "NameAr": "هواوي MateBook",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Dell Inspiron",
     "Description": "Work laptop.",
     "Price": 28000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&auto=format&fit=crop",
     "ProductBrandId": 5,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.dell.com",
+    "NameAr": "ديل Inspiron",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "HP Omen",
     "Description": "Gaming HP.",
     "Price": 55000,
-    "PictureUrl": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1504707748692-419802cf939d?w=500&auto=format&fit=crop",
     "ProductBrandId": 6,
-    "ProductTypeId": 3
+    "ProductTypeId": 3,
+    "BrandUrl": "https://www.hp.com",
+    "NameAr": "إتش بي Omen",
+    "DescriptionAr": "للألعاب."
   },
-
   {
     "Name": "AirPods Pro",
     "Description": "Wireless earbuds.",
     "Price": 9000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=500&auto=format&fit=crop",
     "ProductBrandId": 1,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.apple.com",
+    "NameAr": "AirPods برو",
+    "DescriptionAr": "لاسلكي."
   },
   {
     "Name": "Sony XM5",
     "Description": "Premium Sony.",
     "Price": 12000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&auto=format&fit=crop",
     "ProductBrandId": 3,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.sony.com",
+    "NameAr": "سوني XM5",
+    "DescriptionAr": "متميز."
   },
   {
     "Name": "JBL Tune",
     "Description": "Affordable JBL.",
     "Price": 2500,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop",
     "ProductBrandId": 21,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.jbl.com",
+    "NameAr": "جي بي إل Tune",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Samsung Buds",
     "Description": "Compact buds.",
     "Price": 5000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=500&auto=format&fit=crop",
     "ProductBrandId": 2,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.samsung.com",
+    "NameAr": "سامسونج سماعات أذن",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Anker Soundcore",
     "Description": "Budget audio.",
     "Price": 2000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&auto=format&fit=crop",
     "ProductBrandId": 24,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.anker.com",
+    "NameAr": "أنكر Soundcore",
+    "DescriptionAr": "اقتصادي."
   },
   {
     "Name": "Beats Studio",
     "Description": "Deep bass.",
     "Price": 11000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop",
     "ProductBrandId": 23,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.beatsbydre.com",
+    "NameAr": "بيتس Studio",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "HyperX Headset",
     "Description": "Gaming audio.",
     "Price": 3000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&auto=format&fit=crop",
     "ProductBrandId": 20,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.hyperx.com",
+    "NameAr": "هايبر إكس Headset",
+    "DescriptionAr": "للألعاب."
   },
   {
     "Name": "Logitech G Pro",
     "Description": "Pro headset.",
     "Price": 4000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1545127398-14699f92334b?w=500&auto=format&fit=crop",
     "ProductBrandId": 18,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.logitech.com",
+    "NameAr": "لوجيتك G برو",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Razer Kraken",
     "Description": "Comfort headset.",
     "Price": 3500,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1608156639585-b3a032ef9689?w=500&auto=format&fit=crop",
     "ProductBrandId": 19,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.razer.com",
+    "NameAr": "رازر Kraken",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Bose QC45",
     "Description": "Noise canceling.",
     "Price": 13000,
-    "PictureUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&auto=format&fit=crop",
     "ProductBrandId": 22,
-    "ProductTypeId": 4
+    "ProductTypeId": 4,
+    "BrandUrl": "https://www.bose.com",
+    "NameAr": "بوز QC45",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
-
   {
     "Name": "USB-C Cable",
     "Description": "Charging cable.",
     "Price": 200,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=500&auto=format&fit=crop",
     "ProductBrandId": 24,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.anker.com",
+    "NameAr": "USB-C كابل",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Fast Charger",
     "Description": "Quick charger.",
     "Price": 500,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=500&auto=format&fit=crop",
     "ProductBrandId": 24,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.anker.com",
+    "NameAr": "Fast شاحن",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Power Bank",
     "Description": "Portable battery.",
     "Price": 1200,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=500&auto=format&fit=crop",
     "ProductBrandId": 24,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.anker.com",
+    "NameAr": "بطارية محمولة",
+    "DescriptionAr": "محمول."
   },
   {
     "Name": "Laptop Stand",
     "Description": "Ergonomic stand.",
     "Price": 800,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=500&auto=format&fit=crop",
     "ProductBrandId": 26,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.coolermaster.com",
+    "NameAr": "لابتوب Stand",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Wireless Mouse",
     "Description": "Smooth mouse.",
     "Price": 600,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1625766763788-95dcce9bf5ac?w=500&auto=format&fit=crop",
     "ProductBrandId": 18,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.logitech.com",
+    "NameAr": "لاسلكي ماوس",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Keyboard Cover",
     "Description": "Keyboard protector.",
     "Price": 150,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop",
     "ProductBrandId": 1,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.apple.com",
+    "NameAr": "لوحة مفاتيح Cover",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "HDMI Cable",
     "Description": "Video cable.",
     "Price": 250,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1557853197-aefb550b6fdc?w=500&auto=format&fit=crop",
     "ProductBrandId": 24,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.anker.com",
+    "NameAr": "HDMI كابل",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Phone Holder",
     "Description": "Phone stand.",
     "Price": 300,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1586105251261-72a756497a11?w=500&auto=format&fit=crop",
     "ProductBrandId": 18,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.logitech.com",
+    "NameAr": "هاتف Holder",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Cooling Pad",
     "Description": "Laptop cooling.",
     "Price": 700,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=500&auto=format&fit=crop",
     "ProductBrandId": 26,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.coolermaster.com",
+    "NameAr": "Cooling Pad",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "USB Hub",
     "Description": "Expand ports.",
     "Price": 400,
-    "PictureUrl": "https://images.unsplash.com/photo-1587825140708-dfafaeae6a95?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=500&auto=format&fit=crop",
     "ProductBrandId": 24,
-    "ProductTypeId": 5
+    "ProductTypeId": 5,
+    "BrandUrl": "https://www.anker.com",
+    "NameAr": "USB Hub",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
-
   {
     "Name": "Apple Watch 8",
     "Description": "Smart watch.",
     "Price": 12000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&auto=format&fit=crop",
     "ProductBrandId": 1,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.apple.com",
+    "NameAr": "Apple ساعة ذكية 8",
+    "DescriptionAr": "ذكي."
   },
   {
     "Name": "Samsung Watch 5",
     "Description": "Stylish watch.",
     "Price": 9000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&auto=format&fit=crop",
     "ProductBrandId": 2,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.samsung.com",
+    "NameAr": "سامسونج ساعة ذكية 5",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Huawei GT3",
     "Description": "Long battery.",
     "Price": 7000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500&auto=format&fit=crop",
     "ProductBrandId": 10,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.huawei.com",
+    "NameAr": "هواوي GT3",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Xiaomi Watch",
     "Description": "Affordable watch.",
     "Price": 4000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=500&auto=format&fit=crop",
     "ProductBrandId": 11,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.mi.com",
+    "NameAr": "شاومي ساعة ذكية",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Amazfit GTR",
     "Description": "Elegant watch.",
     "Price": 6000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1510017803434-a899398421b3?w=500&auto=format&fit=crop",
     "ProductBrandId": 11,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.mi.com",
+    "NameAr": "Amazfit GTR",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Fitbit Versa",
     "Description": "Fitness watch.",
     "Price": 8000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=500&auto=format&fit=crop",
     "ProductBrandId": 15,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://store.google.com",
+    "NameAr": "Fitbit Versa",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Garmin Venu",
     "Description": "Tracking watch.",
     "Price": 10000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&auto=format&fit=crop",
     "ProductBrandId": 11,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.mi.com",
+    "NameAr": "Garmin Venu",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   },
   {
     "Name": "Realme Watch",
     "Description": "Budget watch.",
     "Price": 3000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1510017803434-a899398421b3?w=500&auto=format&fit=crop",
     "ProductBrandId": 13,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.realme.com",
+    "NameAr": "ريلمي ساعة ذكية",
+    "DescriptionAr": "اقتصادي."
   },
   {
     "Name": "Oppo Watch",
     "Description": "Modern watch.",
     "Price": 5000,
-    "PictureUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=640&h=480",
+    "PictureUrl": "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=500&auto=format&fit=crop",
     "ProductBrandId": 12,
-    "ProductTypeId": 6
+    "ProductTypeId": 6,
+    "BrandUrl": "https://www.oppo.com",
+    "NameAr": "أوبو ساعة ذكية",
+    "DescriptionAr": "منتج عالي الجودة من كورنر ستور."
   }
 ]

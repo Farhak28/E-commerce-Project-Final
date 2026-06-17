@@ -12,6 +12,18 @@ export function usesStripe(method: CheckoutPaymentMethod): boolean {
   return method === "card" || method === "apple_pay";
 }
 
+export function isOfflinePayment(method: CheckoutPaymentMethod): boolean {
+  return method === "cod" || method === "instapay";
+}
+
+export type DeliveryType = "Standard" | "Scheduled";
+
+/** Maps frontend delivery type → API enum (DeliveryTypeDto). */
+export const DELIVERY_TYPE_API: Record<DeliveryType, number> = {
+  Standard: 0,
+  Scheduled: 1,
+};
+
 export const PAYMENT_OPTIONS: {
   id: CheckoutPaymentMethod;
   labelKey: "payCard" | "payApplePay" | "payInstaPay" | "payCod";

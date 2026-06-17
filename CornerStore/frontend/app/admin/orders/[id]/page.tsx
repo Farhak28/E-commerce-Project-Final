@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Button, Card, Skeleton } from "@/components/ui";
 import { OrderTrackingTimeline } from "@/components/order-tracking-timeline";
 import { OrderStatusBadge } from "@/components/order-status-badge";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import {
   advanceAdminOrderTracking,
   getAdminOrderById,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/utils/order-status";
 
 export default function AdminOrderDetailPage() {
+  const { t } = useAdminI18n();
   const params = useParams<{ id: string }>();
   const [order, setOrder] = useState<OrderToReturnDTO | null>(null);
   const [tracking, setTracking] = useState<OrderTrackingDTO | null>(null);
@@ -64,14 +66,14 @@ export default function AdminOrderDetailPage() {
   };
 
   if (loading) return <Skeleton className="h-48 w-full" />;
-  if (!order) return <p className="text-sm text-text-muted">Order not found.</p>;
+  if (!order) return <p className="text-sm text-text-muted">{t("orderNotFound")}</p>;
 
   const scheduled = formatScheduledDelivery(order.scheduledDeliveryAt);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="section-title text-3xl font-bold">Order #{order.id.slice(0, 8)}</h1>
+        <h1 className="section-title text-3xl font-bold">{t("orderNumber", { id: order.id.slice(0, 8) })}</h1>
         <OrderStatusBadge
           status={order.status}
           paymentMethod={order.paymentMethod}
@@ -89,39 +91,55 @@ export default function AdminOrderDetailPage() {
             advancing={advancing}
           />
         ) : (
-          <p className="text-sm text-text-muted">Tracking not available.</p>
+          <p className="text-sm text-text-muted">{t("trackingUnavailable")}</p>
         )}
       </Card>
 
       <Card className="space-y-2 text-sm">
-        <p className="text-text-muted">Customer: {order.userEmail}</p>
+        <p className="text-text-muted">{t("labelCustomer")} {order.userEmail}</p>
         <p>
-          Payment: {order.paymentMethod ?? inferPaymentMethodLabel(order.paymentIntentId)}
+          {t("labelPayment")} {order.paymentMethod ?? inferPaymentMethodLabel(order.paymentIntentId)}
         </p>
-        <p>Placed: {formatOrderDate(order.orderDate)}</p>
-        <p>Delivery method: {order.deliveryMethod}</p>
+        <p>{t("labelPlaced")} {formatOrderDate(order.orderDate)}</p>
+        <p>{t("labelDeliveryMethod")} {order.deliveryMethod}</p>
+        {order.deliveryType ? (
+          <p>
+            {t("labelDeliveryType")}{" "}
+            {order.deliveryType === "Scheduled" ? t("scheduledDelivery") : t("standardDelivery")}
+          </p>
+        ) : null}
         {order.fulfillmentStage ? (
-          <p>Fulfillment: {formatFulfillmentStage(order.fulfillmentStage)}</p>
+          <p>{t("labelFulfillment")} {formatFulfillmentStage(order.fulfillmentStage)}</p>
         ) : null}
-        {order.trackingNumber ? <p>Tracking ID: {order.trackingNumber}</p> : null}
-        {scheduled ? <p>Scheduled delivery: {scheduled}</p> : null}
+        {order.trackingNumber ? <p>{t("labelTrackingId")} {order.trackingNumber}</p> : null}
+        {order.deliveryType === "Scheduled" && order.scheduledDeliveryDate ? (
+          <p>
+            {t("labelScheduledDelivery")} {order.scheduledDeliveryDate}
+            {order.deliveryTimeSlotLabel ? ` · ${order.deliveryTimeSlotLabel}` : ""}
+          </p>
+        ) : scheduled ? (
+          <p>{t("labelScheduledDelivery")} {scheduled}</p>
+        ) : null}
+        {order.estimatedDeliveryDate ? (
+          <p>{t("labelEstimatedDelivery")} {formatScheduledDelivery(order.estimatedDeliveryDate)}</p>
+        ) : null}
         {order.returnReason ? (
-          <p className="text-text-muted">Return reason: {order.returnReason}</p>
+          <p className="text-text-muted">{t("labelReturnReason")} {order.returnReason}</p>
         ) : null}
-        <p>Subtotal: ${order.subtotal.toFixed(2)}</p>
+        <p>{t("labelSubtotal")} ${order.subtotal.toFixed(2)}</p>
         {typeof order.deliveryPrice === "number" ? (
-          <p>Delivery: ${order.deliveryPrice.toFixed(2)}</p>
+          <p>{t("labelDelivery")} ${order.deliveryPrice.toFixed(2)}</p>
         ) : null}
         {typeof order.discountAmount === "number" && order.discountAmount > 0 ? (
           <p className="text-emerald-700 dark:text-emerald-300">
-            Coupon {order.couponCode ? `(${order.couponCode})` : ""}: -${order.discountAmount.toFixed(2)}
+            {t("labelCoupon")}{order.couponCode ? ` (${order.couponCode})` : ""}: -${order.discountAmount.toFixed(2)}
           </p>
         ) : null}
-        <p className="font-semibold">Total: ${order.total.toFixed(2)}</p>
+        <p className="font-semibold">{t("labelTotal")} ${order.total.toFixed(2)}</p>
       </Card>
 
       <Card>
-        <h2 className="section-title text-lg font-semibold">Items</h2>
+        <h2 className="section-title text-lg font-semibold">{t("labelItems")}</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {order.items.map((item, idx) => (
             <li key={idx} className="flex justify-between gap-2">
@@ -135,11 +153,9 @@ export default function AdminOrderDetailPage() {
       </Card>
 
       <Card className="text-sm text-text-muted">
-        <p>
-          Demo mode: auto-advance runs in the background. Use <strong>Advance step</strong> above for live presentations.
-        </p>
+        <p>{t("demoModeHint")}</p>
         <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => void loadTracking(params.id!)}>
-          Refresh tracking
+          {t("refreshTracking")}
         </Button>
       </Card>
     </div>

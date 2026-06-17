@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using ECommerce.Services.Abstraction;
+using ECommerce.Shared.CommonResponses;
 using ECommerce.Shared.DTOs.OrderDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,17 @@ namespace ECommerce.Presentation.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly IOrderFulfillmentService _fulfillment;
+        private readonly IDeliverySchedulingService _deliveryScheduling;
 
-        public OrdersController(IOrderService orderService, IOrderFulfillmentService fulfillment)
+        public OrdersController(
+            IOrderService orderService,
+            IOrderFulfillmentService fulfillment,
+            IDeliverySchedulingService deliveryScheduling
+        )
         {
             _orderService = orderService;
             _fulfillment = fulfillment;
+            _deliveryScheduling = deliveryScheduling;
         }
 
         [Authorize]
@@ -66,13 +73,74 @@ namespace ECommerce.Presentation.Controllers
         [HttpGet("deliveryQuote")]
         public async Task<ActionResult<DeliveryQuoteDTO>> GetDeliveryQuote(
             [FromQuery] int deliveryMethodId,
-            [FromQuery] DateTimeOffset? scheduledDeliveryAt = null
+            [FromQuery] DateTimeOffset? scheduledDeliveryAt = null,
+            [FromQuery] string? deliveryType = null,
+            [FromQuery] int? deliveryTimeSlotId = null,
+            [FromQuery] string? scheduledDate = null
         )
         {
-            var result = await _orderService.GetDeliveryQuoteAsync(
+            if (!string.IsNullOrWhiteSpace(scheduledDate) && deliveryTimeSlotId.HasValue)
+            {
+                if (!DateOnly.TryParse(scheduledDate, out var date))
+                    return BadRequest("Invalid scheduledDate format. Use yyyy-MM-dd.");
+
+                var resolved = await _deliveryScheduling.ResolveScheduledDateTimeAsync(
+                    date,
+                    deliveryTimeSlotId.Value
+                );
+                if (!resolved.IsSuccess)
+                    return HandleResult(Result<DeliveryQuoteDTO>.Fail(resolved.Errors.ToList()));
+
+                return HandleResult(
+                    await _deliveryScheduling.GetQuoteAsync(
+                        deliveryMethodId,
+                        DeliveryTypeDto.Scheduled,
+                        resolved.Value,
+                        deliveryTimeSlotId
+                    )
+                );
+            }
+
+            var type = string.Equals(deliveryType, "Scheduled", StringComparison.OrdinalIgnoreCase)
+                ? DeliveryTypeDto.Scheduled
+                : DeliveryTypeDto.Standard;
+            var result = await _deliveryScheduling.GetQuoteAsync(
                 deliveryMethodId,
-                scheduledDeliveryAt
+                type,
+                scheduledDeliveryAt,
+                deliveryTimeSlotId
             );
+            return HandleResult(result);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("deliverySettings")]
+        public async Task<ActionResult<DeliverySchedulingSettingsDTO>> GetDeliverySettings()
+        {
+            return Ok(await _deliveryScheduling.GetSettingsAsync());
+        }
+
+        [AllowAnonymous]
+        [HttpGet("availableDates")]
+        public async Task<ActionResult<IReadOnlyList<AvailableDeliveryDateDTO>>> GetAvailableDates(
+            [FromQuery] int deliveryMethodId
+        )
+        {
+            var result = await _deliveryScheduling.GetAvailableDatesAsync(deliveryMethodId);
+            return HandleResult(result);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("timeSlots")]
+        public async Task<ActionResult<IReadOnlyList<DeliveryTimeSlotDTO>>> GetTimeSlots(
+            [FromQuery] int deliveryMethodId,
+            [FromQuery] string date
+        )
+        {
+            if (!DateOnly.TryParse(date, out var parsed))
+                return BadRequest("Invalid date format. Use yyyy-MM-dd.");
+
+            var result = await _deliveryScheduling.GetTimeSlotsAsync(deliveryMethodId, parsed);
             return HandleResult(result);
         }
 

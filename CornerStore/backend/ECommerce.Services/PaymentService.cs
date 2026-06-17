@@ -7,6 +7,7 @@ using ECommerce.Services.Abstraction;
 using ECommerce.Services.Specifications.OrderSpecifications;
 using ECommerce.Shared.CommonResponses;
 using ECommerce.Shared.DTOs.BasketDTOs;
+using ECommerce.Shared.DTOs.OrderDTOs;
 using Microsoft.Extensions.Configuration;
 using Stripe;
 using Product = ECommerce.Domain.Entities.ProductModule.Product;
@@ -22,13 +23,15 @@ public class PaymentService : IPaymentService
     private readonly IConfiguration _configuration;
     private readonly IMapper _mapper;
     private readonly IOrderFulfillmentService _fulfillment;
+    private readonly IDeliverySchedulingService _deliveryScheduling;
 
     public PaymentService(
         IBasketRepository basketRepository,
         IUnitOfWork unitOfWork,
         IConfiguration configuration,
         IMapper mapper,
-        IOrderFulfillmentService fulfillment
+        IOrderFulfillmentService fulfillment,
+        IDeliverySchedulingService deliveryScheduling
     )
     {
         _basketRepository = basketRepository;
@@ -36,6 +39,7 @@ public class PaymentService : IPaymentService
         _configuration = configuration;
         _mapper = mapper;
         _fulfillment = fulfillment;
+        _deliveryScheduling = deliveryScheduling;
     }
 
     private string? GetStripeSecretKey()
@@ -97,10 +101,13 @@ public class PaymentService : IPaymentService
         if (method is null)
             return Error.NotFound("Delivery method not found");
 
-        basket.ShippingPrice = ScheduledDeliveryPricing.Calculate(
-            method.Price,
-            basket.ScheduledDeliveryAt
+        var quote = await _deliveryScheduling.GetQuoteAsync(
+            method.Id,
+            basket.ScheduledDeliveryAt.HasValue ? DeliveryTypeDto.Scheduled : DeliveryTypeDto.Standard,
+            basket.ScheduledDeliveryAt,
+            null
         );
+        basket.ShippingPrice = quote.IsSuccess ? quote.Value!.TotalPrice : method.Price;
 
         foreach (var item in basket.Items)
         {

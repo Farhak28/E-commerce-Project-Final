@@ -50,6 +50,3 @@ next-env.d.ts
 # .NET
 **/bin/
 **/obj/
-
-# Thesis generator cache
-scripts/diagram_output/

@@ -38,7 +38,11 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCapturePr
     void (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+          },
           audio: false,
         });
         if (cancelled) {
@@ -70,12 +74,21 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCapturePr
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) return;
 
+    const maxDim = 2048;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    if (Math.max(width, height) > maxDim) {
+      const scale = maxDim / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, width, height);
 
     canvas.toBlob(
       (blob) => {
@@ -86,7 +99,7 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCapturePr
         onClose();
       },
       "image/jpeg",
-      0.92,
+      0.95,
     );
   }, [onCapture, onClose, stopStream]);
 

@@ -42,6 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
     localStorage.setItem("language", language);
+    document.cookie = `language=${language};path=/;max-age=31536000;SameSite=Lax`;
   }, [language, ready]);
 
   const value = useMemo(

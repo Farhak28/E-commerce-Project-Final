@@ -9,6 +9,12 @@ public interface INotificationService
     Task<Result<int>> GetUnreadCountAsync(string email);
     Task<Result> MarkAsReadAsync(string email, int id);
     Task<Result> MarkAllReadAsync(string email);
-    Task<Result> CreateForUserAsync(string email, string title, string body, string category = "general");
+    Task<Result> CreateForUserAsync(
+        string email,
+        string title,
+        string body,
+        string category = "general",
+        CustomerEmailTrigger? emailTrigger = null
+    );
     Task SeedWelcomeNotificationsAsync();
 }

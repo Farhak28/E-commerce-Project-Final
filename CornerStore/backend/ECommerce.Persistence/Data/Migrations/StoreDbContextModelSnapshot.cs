@@ -357,6 +357,53 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.ToTable("Notifications", (string)null);
                 });
 
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.BlockedDeliveryDate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date")
+                        .IsUnique();
+
+                    b.ToTable("BlockedDeliveryDate");
+                });
+
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.DeliveryHoliday", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date")
+                        .IsUnique();
+
+                    b.ToTable("DeliveryHoliday");
+                });
+
             modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.DeliveryMethod", b =>
                 {
                     b.Property<int>("Id")
@@ -386,6 +433,112 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DeliveryMethod");
+                });
+
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.DeliveryPricingRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<int?>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int?>("MaxLeadHours")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinLeadDays")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinLeadHours")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("PercentOfBaseCap")
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<int>("RuleType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("WindowEndHour")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("WindowStartHour")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliveryPricingRule");
+                });
+
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.DeliverySchedulingSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MaxScheduleDaysAhead")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinLeadHours")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SchedulingEnabled")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliverySchedulingSettings", (string)null);
+                });
+
+            modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.DeliveryTimeSlot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliveryTimeSlot");
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.Order", b =>
@@ -420,8 +573,17 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.Property<decimal>("DeliveryPrice")
                         .HasColumnType("decimal(8,2)");
 
+                    b.Property<int?>("DeliveryTimeSlotId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DeliveryType")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("decimal(8,2)");
+
+                    b.Property<DateTimeOffset?>("EstimatedDeliveryDate")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("FulfillmentStage")
                         .HasColumnType("int");
@@ -451,6 +613,9 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.Property<DateTimeOffset?>("ScheduledDeliveryAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateOnly?>("ScheduledDeliveryDate")
+                        .HasColumnType("date");
+
                     b.Property<DateTimeOffset?>("ShippedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -477,6 +642,8 @@ namespace ECommerce.Persistence.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DeliveryMethodId");
+
+                    b.HasIndex("DeliveryTimeSlotId");
 
                     b.ToTable("Order");
                 });
@@ -629,10 +796,16 @@ namespace ECommerce.Persistence.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("DescriptionAr")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NameAr")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PictureUrl")
                         .IsRequired()
@@ -762,6 +935,11 @@ namespace ECommerce.Persistence.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ECommerce.Domain.Entities.OrderModule.DeliveryTimeSlot", "DeliveryTimeSlot")
+                        .WithMany()
+                        .HasForeignKey("DeliveryTimeSlotId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.OwnsOne("ECommerce.Domain.Entities.OrderModule.OrderAddress", "Address", b1 =>
                         {
                             b1.Property<Guid>("OrderId")
@@ -804,6 +982,8 @@ namespace ECommerce.Persistence.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("DeliveryMethod");
+
+                    b.Navigation("DeliveryTimeSlot");
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.OrderModule.OrderItem", b =>

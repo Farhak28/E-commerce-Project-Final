@@ -1,6 +1,7 @@
 using ECommerce.Domain.Contracts;
 using ECommerce.Domain.Entities.OrderModule;
 using ECommerce.Services.Abstraction;
+using ECommerce.Services.Localization;
 using ECommerce.Services.Specifications.OrderSpecifications;
 using ECommerce.Shared.CommonResponses;
 using ECommerce.Shared.DTOs.OrderDTOs;
@@ -22,16 +23,22 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
     ];
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService;
+    private readonly IRequestCultureAccessor _culture;
     private readonly OrderFulfillmentOptions _options;
     private readonly ILogger<OrderFulfillmentService> _logger;
 
     public OrderFulfillmentService(
         IUnitOfWork unitOfWork,
+        INotificationService notificationService,
+        IRequestCultureAccessor culture,
         IOptions<OrderFulfillmentOptions> options,
         ILogger<OrderFulfillmentService> logger
     )
     {
         _unitOfWork = unitOfWork;
+        _notificationService = notificationService;
+        _culture = culture;
         _options = options.Value;
         _logger = logger;
     }
@@ -94,7 +101,7 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         if (!order.UserEmail.Equals(userEmail, StringComparison.OrdinalIgnoreCase))
             return Error.Validation("Order.Forbidden", "You cannot view this order.");
 
-        return BuildTrackingDto(order);
+        return BuildTrackingDto(order, _culture.Language);
     }
 
     public async Task<Result<OrderTrackingDTO>> GetTrackingByOrderIdAsync(
@@ -106,7 +113,7 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         if (order is null)
             return Error.NotFound("Order.NotFound", "Order not found.");
 
-        return BuildTrackingDto(order);
+        return BuildTrackingDto(order, _culture.Language);
     }
 
     public async Task<Result<OrderTrackingDTO>> AdvanceTrackingByOrderIdAsync(
@@ -125,7 +132,7 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         _unitOfWork.GetRepository<Order, Guid>().Update(order);
         await _unitOfWork.SaveChangesAsync();
 
-        return BuildTrackingDto(order);
+        return BuildTrackingDto(order, _culture.Language);
     }
 
     public async Task<Result<OrderTrackingDTO>> AdvanceTrackingAsync(
@@ -147,7 +154,7 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         _unitOfWork.GetRepository<Order, Guid>().Update(order);
         await _unitOfWork.SaveChangesAsync();
 
-        return BuildTrackingDto(order);
+        return BuildTrackingDto(order, _culture.Language);
     }
 
     public async Task AdvanceDueOrdersAsync(CancellationToken ct = default)
@@ -211,22 +218,30 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         );
     }
 
-    public OrderTrackingDTO BuildTrackingDto(Order order)
+    public void MarkReturned(Order order)
     {
-        var steps = BuildSteps(order);
-        var current = order.FulfillmentStage;
-        var progress = current switch
-        {
-            FulfillmentStage.Delivered => 100,
-            FulfillmentStage.OutForDelivery => 85,
-            FulfillmentStage.Shipped => 65,
-            FulfillmentStage.Processing => 45,
-            FulfillmentStage.Confirmed => 25,
-            FulfillmentStage.OrderPlaced => 10,
-            _ => 0,
-        };
+        var now = DateTimeOffset.UtcNow;
+        order.FulfillmentStage = FulfillmentStage.Returned;
+        order.TrackingEvents.Add(
+            new OrderTrackingEvent
+            {
+                OrderId = order.Id,
+                Stage = FulfillmentStage.Returned,
+                Title = "Return completed",
+                Description = "Your return was approved and processed.",
+                Location = order.Address.City,
+                OccurredAt = now,
+            }
+        );
+    }
 
-        var (headline, subheadline) = GetHeadlines(order);
+    public OrderTrackingDTO BuildTrackingDto(Order order, string? language = null)
+    {
+        var lang = language ?? _culture.Language;
+        var steps = BuildSteps(order, lang);
+        var current = order.FulfillmentStage;
+        var progress = FulfillmentLabels.ProgressPercent(current);
+        var (headline, subheadline) = FulfillmentStrings.Headlines(order, lang);
 
         return new OrderTrackingDTO(
             order.Id,
@@ -315,6 +330,12 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
                     now,
                     ct
                 );
+                await NotifyOrderUpdateAsync(
+                    order,
+                    "Your order is on the way",
+                    $"Order #{order.Id.ToString()[..8]} is in transit with {order.CarrierName}. Tracking: {order.TrackingNumber}.",
+                    CustomerEmailTrigger.OrderInTransit
+                );
                 break;
             case FulfillmentStage.OutForDelivery:
                 order.OutForDeliveryAt = now;
@@ -326,6 +347,12 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
                     order.Address.City,
                     now,
                     ct
+                );
+                await NotifyOrderUpdateAsync(
+                    order,
+                    "Out for delivery today",
+                    $"Order #{order.Id.ToString()[..8]} is on the delivery vehicle and should arrive soon.",
+                    CustomerEmailTrigger.OrderOutForDelivery
                 );
                 break;
             case FulfillmentStage.Delivered:
@@ -339,10 +366,32 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
                     now,
                     ct
                 );
+                await NotifyOrderUpdateAsync(
+                    order,
+                    "Order delivered — rate your items",
+                    $"Order #{order.Id.ToString()[..8]} was delivered. Open your order to leave star ratings and reviews.",
+                    CustomerEmailTrigger.OrderDelivered
+                );
                 break;
         }
 
         _logger.LogInformation("Order {OrderId} advanced to {Stage}", order.Id, next);
+    }
+
+    private async Task NotifyOrderUpdateAsync(
+        Order order,
+        string title,
+        string body,
+        CustomerEmailTrigger? emailTrigger = null
+    )
+    {
+        await _notificationService.CreateForUserAsync(
+            order.UserEmail,
+            title,
+            body,
+            "orders",
+            emailTrigger
+        );
     }
 
     private async Task AddEventAsync(
@@ -386,46 +435,25 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         return order.OrderDate.AddDays(2);
     }
 
-    private static (string headline, string subheadline) GetHeadlines(Order order)
-    {
-        return order.FulfillmentStage switch
-        {
-            FulfillmentStage.Delivered => ("Delivered", "Your package has been delivered."),
-            FulfillmentStage.OutForDelivery => (
-                "Arriving today",
-                $"Out for delivery in {order.Address.City}."
-            ),
-            FulfillmentStage.Shipped => (
-                "On the way",
-                order.TrackingNumber is not null
-                    ? $"Tracking ID {order.TrackingNumber}"
-                    : "Your package left our warehouse."
-            ),
-            FulfillmentStage.Processing => ("Preparing your order", "We're packing your items."),
-            FulfillmentStage.Confirmed => ("Order confirmed", "We'll notify you at each step."),
-            FulfillmentStage.OrderPlaced => ("Order placed", "Waiting for confirmation."),
-            FulfillmentStage.Cancelled => ("Cancelled", "This shipment was cancelled."),
-            FulfillmentStage.ReturnRequested => ("Return in progress", "We've received your return request."),
-            FulfillmentStage.Returned => ("Returned", "This order was returned."),
-            _ => ("Tracking", "Follow your order below."),
-        };
-    }
-
-    private static IReadOnlyList<OrderTrackingStepDTO> BuildSteps(Order order)
+    private static IReadOnlyList<OrderTrackingStepDTO> BuildSteps(Order order, string language)
     {
         if (order.FulfillmentStage is FulfillmentStage.Cancelled or FulfillmentStage.ReturnRequested or FulfillmentStage.Returned)
         {
             return order.TrackingEvents
                 .OrderBy(e => e.OccurredAt)
-                .Select(e => new OrderTrackingStepDTO(
-                    e.Stage.ToString(),
-                    e.Title,
-                    e.Description,
-                    e.Location,
-                    e.OccurredAt,
-                    true,
-                    false
-                ))
+                .Select(e =>
+                {
+                    var copy = FulfillmentStrings.StepCopy(e.Stage, order, language);
+                    return new OrderTrackingStepDTO(
+                        e.Stage.ToString(),
+                        copy.Title,
+                        copy.Description,
+                        e.Location ?? copy.Location,
+                        e.OccurredAt,
+                        true,
+                        false
+                    );
+                })
                 .ToList();
         }
 
@@ -435,34 +463,17 @@ public sealed class OrderFulfillmentService : IOrderFulfillmentService
         return ForwardStages.Select((stage, index) =>
         {
             eventsByStage.TryGetValue(stage, out var ev);
-            var (title, description, location) = ev is not null
-                ? (ev.Title, ev.Description, ev.Location)
-                : DefaultStepCopy(stage, order);
+            var copy = FulfillmentStrings.StepCopy(stage, order, language);
 
             return new OrderTrackingStepDTO(
                 stage.ToString(),
-                title,
-                description,
-                location,
+                copy.Title,
+                copy.Description,
+                ev?.Location ?? copy.Location,
                 ev?.OccurredAt,
                 index < currentIndex || order.FulfillmentStage == FulfillmentStage.Delivered,
                 index == currentIndex && order.FulfillmentStage != FulfillmentStage.Delivered
             );
         }).ToList();
     }
-
-    private static (string title, string description, string? location) DefaultStepCopy(
-        FulfillmentStage stage,
-        Order order
-    ) =>
-        stage switch
-        {
-            FulfillmentStage.OrderPlaced => ("Order placed", "We received your order.", order.Address.City),
-            FulfillmentStage.Confirmed => ("Order confirmed", "Payment confirmed.", "Corner Store — Cairo hub"),
-            FulfillmentStage.Processing => ("Processing", "Preparing your package.", "Corner Store warehouse"),
-            FulfillmentStage.Shipped => ("Shipped", "In transit with carrier.", "Cairo distribution center"),
-            FulfillmentStage.OutForDelivery => ("Out for delivery", "On the delivery vehicle.", order.Address.City),
-            FulfillmentStage.Delivered => ("Delivered", "Package delivered.", order.Address.City),
-            _ => (stage.ToString(), "", null),
-        };
 }

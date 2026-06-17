@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminCharts } from "@/components/admin-charts";
 import { AdminLoadingGrid, AdminPageHeader, AdminStatCard } from "@/components/admin/admin-ui";
 import { Button, Card, Input } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getAdminAiOverview } from "@/lib/services/admin-ai";
 import { getAdminAnalytics, getAdminCouponsSummary, getAdminStats } from "@/lib/services/admin";
@@ -16,46 +17,8 @@ import type {
   AdminStatsDTO,
 } from "@/lib/types";
 
-const FEATURE_LINKS = [
-  {
-    href: "/admin/orders",
-    title: "Order tracking",
-    desc: "Fulfillment stages, scheduled delivery, coupons on orders",
-    tag: "Fulfillment",
-  },
-  {
-    href: "/admin/coupons",
-    title: "Loyalty coupons",
-    desc: "Purchase-based rewards issued per customer",
-    tag: "Coupons",
-  },
-  {
-    href: "/admin/reviews",
-    title: "Product reviews",
-    desc: "Star ratings and customer feedback moderation",
-    tag: "Reviews",
-  },
-  {
-    href: "/admin/ai/visual-search",
-    title: "Visual search",
-    desc: "Image-based product discovery events",
-    tag: "AI",
-  },
-  {
-    href: "/admin/products",
-    title: "Brand official links",
-    desc: "Manufacturer URLs on product & compare pages",
-    tag: "Catalog",
-  },
-  {
-    href: "/admin/ai",
-    title: "AI assistant",
-    desc: "Chat tools, cart, wishlist, recommendations",
-    tag: "AI",
-  },
-];
-
 export default function AdminPage() {
+  const { t } = useAdminI18n();
   const { isAdmin, signIn } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +27,72 @@ export default function AdminPage() {
   const [coupons, setCoupons] = useState<AdminCouponsSummaryDTO | null>(null);
   const [ai, setAi] = useState<AdminAiOverviewDTO | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const featureLinks = useMemo(
+    () => [
+      {
+        href: "/admin/orders",
+        title: t("featOrderTracking"),
+        desc: t("featOrderTrackingDesc"),
+        tag: t("tagFulfillment"),
+      },
+      {
+        href: "/admin/returns",
+        title: t("featReturns"),
+        desc: t("featReturnsDesc"),
+        tag: t("tagFulfillment"),
+      },
+      {
+        href: "/admin/coupons",
+        title: t("featLoyaltyCoupons"),
+        desc: t("featLoyaltyCouponsDesc"),
+        tag: t("tagCoupons"),
+      },
+      {
+        href: "/admin/reviews",
+        title: t("featProductReviews"),
+        desc: t("featProductReviewsDesc"),
+        tag: t("tagReviews"),
+      },
+      {
+        href: "/admin/ai/visual-search",
+        title: t("featVisualSearch"),
+        desc: t("featVisualSearchDesc"),
+        tag: t("tagAi"),
+      },
+      {
+        href: "/admin/products",
+        title: t("featBrandLinks"),
+        desc: t("featBrandLinksDesc"),
+        tag: t("tagCatalog"),
+      },
+      {
+        href: "/admin/ai",
+        title: t("featAiAssistant"),
+        desc: t("featAiAssistantDesc"),
+        tag: t("tagAi"),
+      },
+    ],
+    [t],
+  );
+
+  const quickLinks = useMemo(
+    () => [
+      { href: "/admin/products", title: t("navProducts"), desc: t("quickProductsDesc") },
+      { href: "/admin/orders", title: t("navOrders"), desc: t("quickOrdersDesc") },
+      { href: "/admin/coupons", title: t("navCoupons"), desc: t("quickCouponsDesc") },
+      { href: "/admin/users", title: t("navCustomers"), desc: t("quickCustomersDesc") },
+      { href: "/admin/reviews", title: t("navReviews"), desc: t("quickReviewsDesc") },
+      { href: "/admin/ai", title: t("navAiOverview"), desc: t("quickAiDesc") },
+      { href: "/admin/ai/knowledge", title: t("navKnowledgeBase"), desc: t("quickKnowledgeDesc") },
+      { href: "/admin/ai/visual-search", title: t("navVisualSearch"), desc: t("quickVisualSearchDesc") },
+      { href: "/admin/ai/analytics", title: t("navChatAnalytics"), desc: t("quickChatAnalyticsDesc") },
+      { href: "/admin/system", title: t("navSystemHealth"), desc: t("quickSystemDesc") },
+      { href: "/admin/reports", title: t("navReports"), desc: t("quickReportsDesc") },
+      { href: "/admin/audit", title: t("navAuditLogs"), desc: t("quickAuditDesc") },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -94,7 +123,7 @@ export default function AdminPage() {
     const form = new FormData(e.currentTarget);
     const res = await signIn(String(form.get("email") ?? ""), String(form.get("password") ?? ""));
     if (!res.ok) {
-      setError(res.error ?? "Invalid credentials");
+      setError(res.error ?? t("invalidCredentials"));
       return;
     }
     router.refresh();
@@ -103,16 +132,13 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-md space-y-5 py-12">
-        <AdminPageHeader
-          title="Admin Console"
-          description="Sign in with an Admin or SuperAdmin account to manage Corner Store and the AI assistant."
-        />
+        <AdminPageHeader title={t("adminConsole")} description={t("adminLoginDesc")} />
         <Card>
           <form className="space-y-3" onSubmit={handleSubmit}>
-            <Input name="email" placeholder="Admin email" type="email" required />
-            <Input name="password" placeholder="Password" type="password" required />
+            <Input name="email" placeholder={t("adminEmail")} type="email" required />
+            <Input name="password" placeholder={t("password")} type="password" required />
             <Button type="submit" className="w-full">
-              Sign in
+              {t("signIn")}
             </Button>
             {error ? <p className="text-sm text-accent">{error}</p> : null}
           </form>
@@ -123,51 +149,54 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-8">
-      <AdminPageHeader
-        title="Dashboard"
-        description="Store performance, fulfillment pipeline, loyalty coupons, reviews, and AI assistant activity."
-      />
+      <AdminPageHeader title={t("dashboardTitle")} description={t("dashboardDesc")} />
 
       {loading ? (
         <AdminLoadingGrid count={12} />
       ) : (
         <>
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Business</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">{t("sectionBusiness")}</h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
-              <AdminStatCard label="Revenue" value={`$${(stats?.revenue ?? 0).toLocaleString()}`} />
-              <AdminStatCard label="Orders" value={stats?.ordersCount ?? "—"} />
-              <AdminStatCard label="Customers" value={stats?.usersCount ?? "—"} />
-              <AdminStatCard label="Products" value={stats?.productsCount ?? "—"} />
-              <AdminStatCard label="Pending orders" value={stats?.pendingOrdersCount ?? "—"} tone="warning" />
+              <AdminStatCard label={t("statRevenue")} value={`$${(stats?.revenue ?? 0).toLocaleString()}`} />
+              <AdminStatCard label={t("statOrders")} value={stats?.ordersCount ?? "—"} />
+              <AdminStatCard label={t("statCustomers")} value={stats?.usersCount ?? "—"} />
+              <AdminStatCard label={t("statProducts")} value={stats?.productsCount ?? "—"} />
+              <AdminStatCard label={t("statPendingOrders")} value={stats?.pendingOrdersCount ?? "—"} tone="warning" />
               <AdminStatCard
-                label="Inventory alerts"
+                label={t("statInventoryAlerts")}
                 value={stats?.lowStockCount ?? "—"}
                 tone={(stats?.lowStockCount ?? 0) > 0 ? "warning" : "default"}
-                hint="≤10 in stock"
+                hint={t("hintLowStock")}
               />
             </div>
           </section>
 
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
-              Fulfillment & delivery
+              {t("sectionFulfillment")}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <AdminStatCard
-                label="Active shipments"
+                label={t("statActiveShipments")}
                 value={stats?.activeShipmentsCount ?? "—"}
-                hint="In fulfillment pipeline"
+                hint={t("hintFulfillmentPipeline")}
                 tone="default"
               />
-              <AdminStatCard label="Delivered" value={stats?.deliveredOrdersCount ?? "—"} tone="success" />
+              <AdminStatCard label={t("statDelivered")} value={stats?.deliveredOrdersCount ?? "—"} tone="success" />
               <AdminStatCard
-                label="Scheduled deliveries"
-                value={stats?.scheduledDeliveriesCount ?? analytics?.scheduledDeliveriesCount ?? "—"}
-                hint="Time-slot pricing applied"
+                label={t("statPendingReturns")}
+                value={stats?.pendingReturnsCount ?? "—"}
+                tone={(stats?.pendingReturnsCount ?? 0) > 0 ? "warning" : "default"}
+                hint={t("hintAwaitingReview")}
               />
               <AdminStatCard
-                label="Delivery revenue"
+                label={t("statScheduledDeliveries")}
+                value={stats?.scheduledDeliveriesCount ?? analytics?.scheduledDeliveriesCount ?? "—"}
+                hint={t("hintTimeSlotPricing")}
+              />
+              <AdminStatCard
+                label={t("statDeliveryRevenue")}
                 value={
                   analytics
                     ? `$${analytics.totalDeliveryRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -179,47 +208,47 @@ export default function AdminPage() {
 
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
-              Loyalty & engagement
+              {t("sectionLoyalty")}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <AdminStatCard
-                label="Active coupons"
+                label={t("statActiveCoupons")}
                 value={stats?.activeCouponsCount ?? coupons?.activeCoupons ?? "—"}
-                hint={`${coupons?.redeemedCoupons ?? stats?.redeemedCouponsCount ?? 0} redeemed`}
+                hint={t("hintRedeemed", { count: coupons?.redeemedCoupons ?? stats?.redeemedCouponsCount ?? 0 })}
               />
               <AdminStatCard
-                label="Discounts given"
+                label={t("statDiscountsGiven")}
                 value={`$${(stats?.totalDiscountsGiven ?? coupons?.totalDiscountsGiven ?? 0).toFixed(2)}`}
               />
-              <AdminStatCard label="Product reviews" value={stats?.reviewsCount ?? "—"} />
+              <AdminStatCard label={t("statProductReviews")} value={stats?.reviewsCount ?? "—"} />
               <AdminStatCard
-                label="Brands with official URL"
+                label={t("statBrandsOfficialUrl")}
                 value={stats?.brandsWithOfficialUrlCount ?? "—"}
-                hint="Linked on product pages"
+                hint={t("hintLinkedOnProduct")}
               />
             </div>
           </section>
 
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">AI Assistant</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">{t("sectionAi")}</h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <AdminStatCard
-                label="Total conversations"
+                label={t("statTotalConversations")}
                 value={ai?.totalConversations ?? "—"}
-                hint={`${ai?.conversationsToday ?? 0} today`}
+                hint={t("hintToday", { count: ai?.conversationsToday ?? 0 })}
               />
               <AdminStatCard
-                label="Avg response time"
+                label={t("statAvgResponseTime")}
                 value={ai ? `${Math.round(ai.averageLatencyMs)} ms` : "—"}
               />
-              <AdminStatCard label="Recommendations" value={ai?.recommendationRequests ?? "—"} hint="Tool calls" />
+              <AdminStatCard label={t("statRecommendations")} value={ai?.recommendationRequests ?? "—"} hint={t("hintToolCalls")} />
               <AdminStatCard
-                label="Visual searches"
+                label={t("statVisualSearches")}
                 value={analytics?.visualSearchEventsCount ?? "—"}
               />
               <AdminStatCard
-                label="Gemini status"
-                value={ai?.geminiConfigured ? "Connected" : "Not configured"}
+                label={t("statGeminiStatus")}
+                value={ai?.geminiConfigured ? t("connected") : t("notConfigured")}
                 tone={ai?.geminiConfigured ? "success" : "warning"}
                 hint={ai?.geminiModel ?? undefined}
               />
@@ -231,9 +260,9 @@ export default function AdminPage() {
       <AdminCharts analytics={analytics} ai={ai} />
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Store features</h2>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">{t("sectionStoreFeatures")}</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURE_LINKS.map((item) => (
+          {featureLinks.map((item) => (
             <Link key={item.href} href={item.href} className="block">
               <Card className="h-full transition hover:border-primary/30 hover:shadow-md">
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
@@ -241,7 +270,7 @@ export default function AdminPage() {
                 </span>
                 <h3 className="mt-2 font-semibold">{item.title}</h3>
                 <p className="mt-1 text-sm text-text-muted">{item.desc}</p>
-                <span className="mt-3 inline-flex text-sm font-semibold text-primary">Manage →</span>
+                <span className="mt-3 inline-flex text-sm font-semibold text-primary">{t("manage")}</span>
               </Card>
             </Link>
           ))}
@@ -249,25 +278,12 @@ export default function AdminPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { href: "/admin/products", title: "Products", desc: "Catalog, brands & official links" },
-          { href: "/admin/orders", title: "Orders", desc: "Tracking, scheduling & discounts" },
-          { href: "/admin/coupons", title: "Coupons", desc: "Loyalty rewards overview" },
-          { href: "/admin/users", title: "Customers", desc: "User management" },
-          { href: "/admin/reviews", title: "Reviews", desc: "Ratings moderation" },
-          { href: "/admin/ai", title: "AI Overview", desc: "Assistant metrics" },
-          { href: "/admin/ai/knowledge", title: "Knowledge Base", desc: "RAG documents & chunks" },
-          { href: "/admin/ai/visual-search", title: "Visual Search", desc: "Image search analytics" },
-          { href: "/admin/ai/analytics", title: "Chat Analytics", desc: "Conversation insights" },
-          { href: "/admin/system", title: "System Health", desc: "API, DB & fulfillment worker" },
-          { href: "/admin/reports", title: "Reports", desc: "Extended business reports" },
-          { href: "/admin/audit", title: "Audit Logs", desc: "Admin change history" },
-        ].map((item) => (
+        {quickLinks.map((item) => (
           <Link key={item.href} href={item.href} className="block">
             <Card className="h-full transition hover:border-primary/30 hover:shadow-md">
               <h3 className="font-semibold">{item.title}</h3>
               <p className="mt-1 text-sm text-text-muted">{item.desc}</p>
-              <span className="mt-3 inline-flex text-sm font-semibold text-primary">Open →</span>
+              <span className="mt-3 inline-flex text-sm font-semibold text-primary">{t("open")}</span>
             </Card>
           </Link>
         ))}

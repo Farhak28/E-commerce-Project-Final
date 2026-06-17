@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui";
+import { useAdminI18n } from "@/lib/admin/use-admin-i18n";
 import type { AdminAiOverviewDTO, AdminAnalyticsDTO } from "@/lib/types";
 import { getOrderStatusMeta } from "@/lib/utils/order-status";
 
@@ -40,6 +41,8 @@ export function AdminCharts({
   analytics: AdminAnalyticsDTO | null;
   ai?: AdminAiOverviewDTO | null;
 }) {
+  const { t, language } = useAdminI18n();
+
   if (!analytics) return null;
 
   const revenueItems = analytics.revenueByMonth.map((m) => ({
@@ -48,16 +51,16 @@ export function AdminCharts({
   }));
 
   const statusItems = analytics.ordersByStatus.map((s) => ({
-    label: getOrderStatusMeta(s.status).label,
+    label: getOrderStatusMeta(s.status, undefined, undefined, language).label,
     value: s.count,
   }));
 
   const aiToolItems = ai
     ? [
-        { label: "Product searches", value: ai.productSearchRequests },
-        { label: "Comparisons", value: ai.comparisonRequests },
-        { label: "Order tracking", value: ai.orderStatusRequests },
-        { label: "Recommendations", value: ai.recommendationRequests },
+        { label: t("chartProductSearches"), value: ai.productSearchRequests },
+        { label: t("chartComparisons"), value: ai.comparisonRequests },
+        { label: t("chartOrderTracking"), value: ai.orderStatusRequests },
+        { label: t("statRecommendations"), value: ai.recommendationRequests },
       ].filter((i) => i.value > 0)
     : [];
 
@@ -69,20 +72,20 @@ export function AdminCharts({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
-        <h2 className="section-title text-lg font-semibold">Revenue (6 months)</h2>
+        <h2 className="section-title text-lg font-semibold">{t("chartRevenue6Months")}</h2>
         <div className="mt-4">
           <BarChart items={revenueItems} formatValue={(v) => `$${v.toLocaleString()}`} />
         </div>
       </Card>
       <Card>
-        <h2 className="section-title text-lg font-semibold">Orders by status</h2>
+        <h2 className="section-title text-lg font-semibold">{t("chartOrdersByStatus")}</h2>
         <div className="mt-4">
           <BarChart items={statusItems} />
         </div>
       </Card>
       {fulfillmentItems.length > 0 ? (
         <Card>
-          <h2 className="section-title text-lg font-semibold">Fulfillment pipeline</h2>
+          <h2 className="section-title text-lg font-semibold">{t("chartFulfillmentPipeline")}</h2>
           <div className="mt-4">
             <BarChart items={fulfillmentItems} />
           </div>
@@ -90,19 +93,22 @@ export function AdminCharts({
       ) : null}
       {aiToolItems.length > 0 ? (
         <Card className={fulfillmentItems.length > 0 ? "" : "lg:col-span-2"}>
-          <h2 className="section-title text-lg font-semibold">AI tool usage</h2>
-          <p className="mt-1 text-sm text-text-muted">Real counts from assistant interaction logs.</p>
+          <h2 className="section-title text-lg font-semibold">{t("chartAiToolUsage")}</h2>
+          <p className="mt-1 text-sm text-text-muted">{t("chartAiToolUsageDesc")}</p>
           <div className="mt-4">
             <BarChart items={aiToolItems} />
           </div>
         </Card>
       ) : (
         <Card className="lg:col-span-2">
-          <h2 className="section-title text-lg font-semibold">AI engagement</h2>
+          <h2 className="section-title text-lg font-semibold">{t("chartAiEngagement")}</h2>
           <p className="mt-2 text-sm text-text-muted">
             {ai?.totalConversations
-              ? `${ai.totalConversations} conversations logged · ${ai.uniqueSessions} unique sessions`
-              : "No AI conversations logged yet. Usage will appear after customers use the assistant."}
+              ? t("chartAiEngagementStats", {
+                  conversations: ai.totalConversations,
+                  sessions: ai.uniqueSessions,
+                })
+              : t("chartNoAiConversations")}
           </p>
         </Card>
       )}

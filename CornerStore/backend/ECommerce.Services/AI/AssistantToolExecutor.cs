@@ -4,6 +4,7 @@ using ECommerce.Services.Abstraction.AI;
 using ECommerce.Shared;
 using ECommerce.Shared.DTOs.AIDTOs;
 using ECommerce.Shared.DTOs.BasketDTOs;
+using ECommerce.Shared.DTOs.OrderDTOs;
 using ECommerce.Shared.DTOs.ProductDTOs;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +19,7 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
     private readonly IReviewSummaryService _reviewSummary;
     private readonly IBasketService _baskets;
     private readonly IWishlistService _wishlist;
+    private readonly IDeliverySchedulingService _delivery;
     private readonly ILogger<AssistantToolExecutor> _logger;
 
     public AssistantToolExecutor(
@@ -28,6 +30,7 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
         IReviewSummaryService reviewSummary,
         IBasketService baskets,
         IWishlistService wishlist,
+        IDeliverySchedulingService delivery,
         ILogger<AssistantToolExecutor> logger
     )
     {
@@ -38,6 +41,7 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
         _reviewSummary = reviewSummary;
         _baskets = baskets;
         _wishlist = wishlist;
+        _delivery = delivery;
         _logger = logger;
     }
 
@@ -69,6 +73,7 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
                 "getReviewSummary" => await ReviewSummary(root, ct),
                 "addToCart" => await AddToCart(root, context, ct),
                 "addToWishlist" => await AddToWishlist(root, userEmail, ct),
+                "getDeliveryOptions" => await GetDeliveryOptions(root, ct),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" }),
             };
         }
@@ -351,6 +356,51 @@ public sealed class AssistantToolExecutor : IAssistantToolExecutor
         });
     }
 
+    private async Task<string> GetDeliveryOptions(JsonElement root, CancellationToken ct)
+    {
+        var deliveryMethodId = root.TryGetProperty("deliveryMethodId", out var dm) && dm.TryGetInt32(out var id)
+            ? id
+            : 1;
+        var dateStr = root.TryGetProperty("date", out var d) ? d.GetString() : null;
+
+        var options = await _delivery.GetDeliveryOptionsAsync(ct);
+        if (!options.IsSuccess)
+            return JsonSerializer.Serialize(new { error = "Could not load delivery options." });
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["methods"] = options.Value!.DeliveryMethods,
+            ["settings"] = options.Value.Settings,
+            ["schedulingEnabled"] = options.Value.SchedulingEnabled,
+        };
+
+        if (deliveryMethodId > 0)
+        {
+            var dates = await _delivery.GetAvailableDatesAsync(deliveryMethodId, ct);
+            if (dates.IsSuccess)
+                payload["availableDates"] = dates.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dateStr) && DateOnly.TryParse(dateStr, out var parsed))
+        {
+            var slots = await _delivery.GetTimeSlotsAsync(deliveryMethodId, parsed, ct);
+            if (slots.IsSuccess)
+                payload["timeSlots"] = slots.Value;
+
+            var quote = await _delivery.GetQuoteAsync(
+                deliveryMethodId,
+                DeliveryTypeDto.Scheduled,
+                new DateTimeOffset(parsed.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
+                null,
+                ct
+            );
+            if (quote.IsSuccess)
+                payload["sampleQuote"] = quote.Value;
+        }
+
+        return JsonSerializer.Serialize(payload);
+    }
+
     private static List<int> ParseIds(JsonElement root, string prop)
     {
         var ids = new List<int>();
@@ -378,5 +428,6 @@ public static class AssistantToolCatalog
         new("getReviewSummary", "Analyze customer reviews for a product. Returns sentiment breakdown and summary.", """{"type":"object","properties":{"productId":{"type":"integer"}},"required":["productId"]}"""),
         new("addToCart", "Add a product to the shopper's cart. Requires productId from search or recommendations.", """{"type":"object","properties":{"productId":{"type":"integer"},"quantity":{"type":"integer"}},"required":["productId"]}"""),
         new("addToWishlist", "Save a product to the signed-in user's wishlist.", """{"type":"object","properties":{"productId":{"type":"integer"}},"required":["productId"]}"""),
+        new("getDeliveryOptions", "Get real delivery methods, scheduling settings, available dates, time slots, and shipping quotes from the store API. Never invent costs or dates.", """{"type":"object","properties":{"deliveryMethodId":{"type":"integer"},"date":{"type":"string","description":"yyyy-MM-dd"}}}"""),
     ];
 }

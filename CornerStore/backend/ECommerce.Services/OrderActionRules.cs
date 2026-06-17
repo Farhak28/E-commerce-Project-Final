@@ -15,11 +15,19 @@ internal static class OrderActionRules
 
     public static bool CanReturn(Order order)
     {
-        if (order.Status != OrderStatus.PaymentReceived)
+        if (order.Status is OrderStatus.ReturnRequested or OrderStatus.Returned or OrderStatus.Cancelled or OrderStatus.PaymentFailed)
             return false;
 
-        return order.OrderDate.AddDays(ReturnWindowDays) >= DateTimeOffset.UtcNow;
+        if (order.FulfillmentStage != FulfillmentStage.Delivered)
+            return false;
+
+        var windowStart = order.DeliveredAt ?? order.OrderDate;
+        return windowStart.AddDays(ReturnWindowDays) >= DateTimeOffset.UtcNow;
     }
+
+    public static bool CanReview(Order order) =>
+        order.FulfillmentStage == FulfillmentStage.Delivered
+        && order.Status is not OrderStatus.Cancelled and not OrderStatus.Returned;
 
     public static bool CanSchedule(Order order) =>
         order.Status is OrderStatus.Pending or OrderStatus.PaymentReceived;

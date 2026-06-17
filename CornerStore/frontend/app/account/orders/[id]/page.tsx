@@ -4,16 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card, Skeleton } from "@/components/ui";
 import { OrderActions } from "@/components/order-actions";
+import { OrderReviewPrompt } from "@/components/order-review-prompt";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { OrderTrackingTimeline } from "@/components/order-tracking-timeline";
 import { advanceOrderTracking, getOrderById, getOrderTracking } from "@/lib/services/orders";
 import type { OrderToReturnDTO, OrderTrackingDTO } from "@/lib/types";
+import { useI18n } from "@/lib/use-i18n";
 import { formatAddressLine } from "@/lib/utils/address";
 import { formatOrderDate, formatScheduledDelivery, inferPaymentMethodLabel } from "@/lib/utils/order-status";
 
 const TRACKING_POLL_MS = 30_000;
 
 export default function OrderDetailPage() {
+  const { t, language } = useI18n();
   const params = useParams<{ id: string }>();
   const [order, setOrder] = useState<OrderToReturnDTO | null>(null);
   const [tracking, setTracking] = useState<OrderTrackingDTO | null>(null);
@@ -64,14 +67,22 @@ export default function OrderDetailPage() {
   };
 
   if (loading) return <Skeleton className="h-48 w-full" />;
-  if (!order) return <p className="text-sm text-text-muted">Order not found.</p>;
+  if (!order) {
+    return (
+      <p className="text-sm text-text-muted" suppressHydrationWarning>
+        {t("orderNotFound")}
+      </p>
+    );
+  }
 
-  const scheduled = formatScheduledDelivery(order.scheduledDeliveryAt);
+  const scheduled = formatScheduledDelivery(order.scheduledDeliveryAt, language);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="section-title text-3xl font-bold">Order #{order.id.slice(0, 8)}</h1>
+        <h1 className="section-title text-3xl font-bold" suppressHydrationWarning>
+          {t("orderNumber", { id: order.id.slice(0, 8) })}
+        </h1>
         <OrderStatusBadge
           status={order.status}
           paymentMethod={order.paymentMethod}
@@ -79,47 +90,83 @@ export default function OrderDetailPage() {
         />
       </div>
 
+      {order.canReview ? (
+        <OrderReviewPrompt orderId={order.id} items={order.items} />
+      ) : null}
+
       <Card>
         {trackingLoading && !tracking ? (
           <Skeleton className="h-56 w-full" />
         ) : tracking ? (
           <OrderTrackingTimeline tracking={tracking} onAdvance={handleAdvance} advancing={advancing} />
         ) : (
-          <p className="text-sm text-text-muted">Tracking is not available for this order yet.</p>
+          <p className="text-sm text-text-muted" suppressHydrationWarning>
+            {t("trackingUnavailable")}
+          </p>
         )}
       </Card>
 
       <Card className="space-y-2">
-        <p className="text-sm text-text-muted">Placed {formatOrderDate(order.orderDate)}</p>
-        <p className="text-sm">
-          Payment: {order.paymentMethod ?? inferPaymentMethodLabel(order.paymentIntentId)}
+        <p className="text-sm text-text-muted">
+          {t("placedOn", { date: formatOrderDate(order.orderDate, language) })}
         </p>
-        <p className="text-sm">Delivery method: {order.deliveryMethod}</p>
-        {scheduled ? (
-          <p className="text-sm">Scheduled for: {scheduled}</p>
+        <p className="text-sm">
+          {t("paymentLabel")}:{" "}
+          {order.paymentMethod ?? inferPaymentMethodLabel(order.paymentIntentId, language)}
+        </p>
+        <p className="text-sm">
+          {t("deliveryMethodLabel")}: {order.deliveryMethod}
+        </p>
+        {order.deliveryType ? (
+          <p className="text-sm">
+            {t("deliveryTypeLabel")}:{" "}
+            {order.deliveryType === "Scheduled" ? t("scheduledDelivery") : t("standardDelivery")}
+          </p>
+        ) : null}
+        {order.deliveryType === "Scheduled" && order.scheduledDeliveryDate ? (
+          <p className="text-sm">
+            {t("scheduledFor")}: {order.scheduledDeliveryDate}
+            {order.deliveryTimeSlotLabel ? ` · ${order.deliveryTimeSlotLabel}` : ""}
+          </p>
+        ) : scheduled ? (
+          <p className="text-sm">
+            {t("scheduledFor")}: {scheduled}
+          </p>
+        ) : null}
+        {order.estimatedDeliveryDate ? (
+          <p className="text-sm text-text-muted">
+            {t("estimatedDelivery")}: {formatScheduledDelivery(order.estimatedDeliveryDate, language)}
+          </p>
         ) : null}
         <p className="text-sm">
-          Subtotal: ${order.subtotal.toFixed(2)}
+          {t("subtotal")}: ${order.subtotal.toFixed(2)}
           {typeof order.deliveryPrice === "number" ? (
             <>
               <br />
-              Delivery: ${order.deliveryPrice.toFixed(2)}
+              {t("delivery")}: ${order.deliveryPrice.toFixed(2)}
               {order.scheduledDeliveryAt ? (
-                <span className="text-text-muted"> (scheduled slot)</span>
+                <span className="text-text-muted"> {t("scheduledSlot")}</span>
               ) : null}
             </>
           ) : null}
         </p>
         {typeof order.discountAmount === "number" && order.discountAmount > 0 ? (
           <p className="text-sm text-emerald-700 dark:text-emerald-300">
-            Coupon {order.couponCode ? `(${order.couponCode})` : ""}: -${order.discountAmount.toFixed(2)}
+            {t("couponDiscount", {
+              code: order.couponCode ? `(${order.couponCode})` : "",
+              amount: order.discountAmount.toFixed(2),
+            })}
           </p>
         ) : null}
-        <p className="text-sm font-semibold">Total: ${order.total.toFixed(2)}</p>
+        <p className="text-sm font-semibold">
+          {t("total")}: ${order.total.toFixed(2)}
+        </p>
       </Card>
 
       <Card>
-        <h2 className="section-title text-lg font-semibold">Shipping address</h2>
+        <h2 className="section-title text-lg font-semibold" suppressHydrationWarning>
+          {t("shippingAddress")}
+        </h2>
         <p className="mt-2 text-sm text-text-muted">
           {order.address.firstName} {order.address.lastName}
           <br />
@@ -128,7 +175,9 @@ export default function OrderDetailPage() {
       </Card>
 
       <Card>
-        <h2 className="section-title text-lg font-semibold">Items</h2>
+        <h2 className="section-title text-lg font-semibold" suppressHydrationWarning>
+          {t("items")}
+        </h2>
         <ul className="mt-3 space-y-2 text-sm">
           {order.items.map((item, idx) => (
             <li key={idx} className="flex justify-between gap-2">
@@ -142,7 +191,9 @@ export default function OrderDetailPage() {
       </Card>
 
       <Card>
-        <h2 className="section-title text-lg font-semibold">Manage order</h2>
+        <h2 className="section-title text-lg font-semibold" suppressHydrationWarning>
+          {t("manageOrder")}
+        </h2>
         <div className="mt-3">
           <OrderActions order={order} onUpdated={setOrder} />
         </div>

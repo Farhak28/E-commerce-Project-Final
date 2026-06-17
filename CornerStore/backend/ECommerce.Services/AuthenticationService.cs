@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -23,16 +23,19 @@ namespace ECommerce.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly INotificationService _notificationService;
 
         public AuthenticationService(
             UserManager<ApplicationUser> userManager,
             IConfiguration configuration,
-            IMapper mapper
+            IMapper mapper,
+            INotificationService notificationService
         )
         {
             _userManager = userManager;
             _configuration = configuration;
             _mapper = mapper;
+            _notificationService = notificationService;
         }
 
         public async Task<bool> CheckEmailAsync(string email)
@@ -192,6 +195,14 @@ namespace ECommerce.Services
                     await UpsertSavedAddressAsync(email, address);
                 }
             }
+
+            await _notificationService.CreateForUserAsync(
+                email,
+                "Welcome to Corner Store",
+                "Your account is ready. Explore products, track orders, and unlock loyalty rewards as you shop.",
+                "welcome",
+                CustomerEmailTrigger.AccountWelcome
+            );
 
             var token = await CreateTokenAsync(user);
             var roles = await _userManager.GetRolesAsync(user);
